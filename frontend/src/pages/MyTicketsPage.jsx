@@ -1,7 +1,7 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { getTicketsForRole, updateTicketStatus, assignTechnician, resolveTicket, addComment, editComment, deleteComment } from "../services/api";
+import { getTicketsForRole, updateTicketStatus, assignTechnician, resolveTicket, addComment, editComment, deleteComment, getTicketImages, deleteTicketImage } from "../services/api";
 import "../styles/MyTicketsPage.css";
 
 function MyTicketsPage() {
@@ -30,6 +30,7 @@ function MyTicketsPage() {
   const [commentInput, setCommentInput] = React.useState("");
   const [editingCommentId, setEditingCommentId] = React.useState(null);
   const [editingCommentText, setEditingCommentText] = React.useState("");
+  const [ticketImages, setTicketImages] = React.useState([]);
 
   const roles = user?.roles || [];
   const isAdmin = roles.includes("ROLE_ADMIN");
@@ -85,11 +86,20 @@ function MyTicketsPage() {
   const rejectedTickets = tickets.filter(t => t.status === "REJECTED").length;
   const highPriorityTickets = tickets.filter(t => t.priority === "HIGH").length;
 
-  const handleTicketClick = (ticket) => {
+  const handleTicketClick = async (ticket) => {
     setSelectedTicket(ticket);
     setStatusInput(ticket.status);
     setTechnicianEmailInput(ticket.assignedTechnicianEmail || "");
     setResolutionNotesInput(ticket.resolutionNotes || "");
+    setTicketImages([]);
+    if (ticket.imageCount > 0) {
+      try {
+        const images = await getTicketImages(ticket.id);
+        setTicketImages(images);
+      } catch (err) {
+        console.error("Failed to load images", err);
+      }
+    }
   };
 
   const handleAssign = async () => {
@@ -161,6 +171,20 @@ function MyTicketsPage() {
       setSelectedTicket(updatedTicket);
     } catch (err) {
       alert("Failed to delete comment: " + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleDeleteImage = async (fileName) => {
+    if (!selectedTicket) return;
+    if (!window.confirm("Are you sure you want to delete this attachment?")) return;
+    try {
+      await deleteTicketImage(selectedTicket.id, fileName);
+      setTicketImages(prev => prev.filter(img => img.fileName !== fileName));
+      await loadTickets();
+      // To keep selectedTicket in sync with loaded tickets:
+      setSelectedTicket(prev => ({ ...prev, imageCount: prev.imageCount - 1 }));
+    } catch (err) {
+      alert("Failed to delete image: " + (err.response?.data?.message || err.message));
     }
   };
 
@@ -319,6 +343,29 @@ function MyTicketsPage() {
               <p className="detail-category">{selectedTicket.category}</p>
               <p className="detail-desc">{selectedTicket.description}</p>
             </div>
+
+            {ticketImages.length > 0 && (
+              <div className="panel-section">
+                <h4>Attachments ({ticketImages.length})</h4>
+                <div className="attachments-grid">
+                  {ticketImages.map(img => {
+                    const canDelete = isAdmin || selectedTicket.createdByEmail === user?.email;
+                    return (
+                      <div key={img.fileName} className="attachment-item">
+                        <a href={`data:${img.contentType};base64,${img.dataBase64}`} target="_blank" rel="noreferrer">
+                          <img src={`data:${img.contentType};base64,${img.dataBase64}`} alt={img.fileName} className="attachment-thumb" />
+                        </a>
+                        {canDelete && (
+                          <button className="btn-delete-img" onClick={() => handleDeleteImage(img.fileName)} title="Delete Attachment">
+                            ✖
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             <div className="panel-section">
               <h4>Contact Info</h4>

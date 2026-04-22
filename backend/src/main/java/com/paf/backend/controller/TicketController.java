@@ -257,4 +257,27 @@ public class TicketController {
 				updatedTicket.getComments(),
 				updatedTicket.getCreatedAt());
 	}
+
+	@GetMapping("/{id}/images")
+	@PreAuthorize("hasAnyRole('USER', 'ADMIN', 'TECHNICIAN')")
+	public List<TicketImageResponse> getTicketImages(
+			@PathVariable String id,
+			Authentication authentication) {
+		return ticketService.getTicketImages(id, authentication).stream()
+				.map(img -> new TicketImageResponse(
+						img.getFileName(),
+						img.getContentType(),
+						img.getDataBase64()))
+				.toList();
+	}
+
+	@DeleteMapping("/{id}/images/{fileName}")
+	@PreAuthorize("hasAnyRole('USER', 'ADMIN', 'TECHNICIAN')")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void deleteTicketImage(
+			@PathVariable String id,
+			@PathVariable String fileName,
+			Authentication authentication) {
+		ticketService.deleteTicketImage(id, fileName, authentication);
+	}
 }

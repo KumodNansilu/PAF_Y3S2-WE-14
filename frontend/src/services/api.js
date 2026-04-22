@@ -91,6 +91,16 @@ export async function deleteComment(id, commentId) {
   return response.data;
 }
 
+export async function getTicketImages(id) {
+  const response = await api.get(`/api/tickets/${id}/images`);
+  return response.data;
+}
+
+export async function deleteTicketImage(id, fileName) {
+  const response = await api.delete(`/api/tickets/${id}/images/${encodeURIComponent(fileName)}`);
+  return response.data;
+}
+
 export function getGoogleLoginUrl() {
   return `${api.defaults.baseURL}/oauth2/authorization/google`;
 }

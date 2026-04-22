@@ -262,3 +262,63 @@
   .dashboard-main.panel-open { padding-right: 0; }
   .side-panel { width: 100%; top: 0; }
 }
+
+/* Attachments */
+.ticket-attachments {
+  margin-top: 1.5rem;
+}
+
+.ticket-attachments h4 {
+  margin-bottom: 0.8rem;
+  color: #1e1e2d;
+  font-weight: 600;
+}
+
+.attachments-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.attachment-item {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: transform 0.2s ease;
+}
+
+.attachment-item:hover {
+  transform: scale(1.05);
+}
+
+.attachment-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.btn-delete-img {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background-color: rgba(239, 68, 68, 0.9);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.2s;
+}
+
+.btn-delete-img:hover {
+  background-color: rgb(220, 38, 38);
+}

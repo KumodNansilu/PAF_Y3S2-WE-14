@@ -65,6 +65,10 @@ public class TicketService {
 				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only image files are allowed");
 			}
 
+			if (file.getSize() > 5 * 1024 * 1024) { // 5MB limit
+				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Image size must be less than 5MB");
+			}
+
 			TicketImage image = new TicketImage();
 			image.setFileName(sanitizeFileName(file.getOriginalFilename()));
 			image.setContentType(file.getContentType());
@@ -223,6 +227,33 @@ public class TicketService {
 		ticket.getComments().removeIf(c -> c.getId().equals(commentId));
 		ticket.setUpdatedAt(Instant.now());
 		return ticketRepository.save(ticket);
+	}
+
+	public List<TicketImage> getTicketImages(String ticketId, Authentication authentication) {
+		Ticket ticket = ticketRepository.findById(ticketId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket not found"));
+		return ticket.getImages();
+	}
+
+	public void deleteTicketImage(String ticketId, String fileName, Authentication authentication) {
+		Ticket ticket = ticketRepository.findById(ticketId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket not found"));
+
+		List<String> authorities = authentication.getAuthorities().stream()
+				.map(a -> a.getAuthority())
+				.toList();
+
+		if (!ticket.getCreatedByEmail().equals(authentication.getName()) && !authorities.contains("ROLE_ADMIN")) {
+			throw new AccessDeniedException("Only the author or an admin can delete attachments");
+		}
+
+		boolean removed = ticket.getImages().removeIf(img -> img.getFileName().equals(fileName));
+		if (!removed) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Image not found");
+		}
+
+		ticket.setUpdatedAt(Instant.now());
+		ticketRepository.save(ticket);
 	}
 
 	private String encodeBase64(MultipartFile file) {
