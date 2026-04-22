@@ -38,6 +38,7 @@ function AppShell() {
           <Route path="/resources" element={<SimplePage title="Resource Management" />} />
           <Route path="/bookings" element={<SimplePage title="Booking Management" />} />
           <Route path="/tickets" element={<TicketCreatePage />} />
+          <Route path="/tickets/list" element={<MyTicketsPage />} />
           <Route path="/tickets/my" element={<MyTicketsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/search" element={<SearchResultsPage />} />

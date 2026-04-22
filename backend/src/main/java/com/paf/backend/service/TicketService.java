@@ -7,6 +7,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
 
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
@@ -47,6 +48,7 @@ public class TicketService {
 		ticket.setContactPhone(request.contactPhone().trim());
 		ticket.setStatus(TicketStatus.OPEN);
 		ticket.setCreatedByEmail(createdByEmail);
+		ticket.setAssignedTechnicianEmail(null);
 		ticket.setCreatedAt(Instant.now());
 		ticket.setUpdatedAt(Instant.now());
 
@@ -72,6 +74,22 @@ public class TicketService {
 
 	public List<Ticket> getTicketsForUser(String createdByEmail) {
 		return ticketRepository.findByCreatedByEmailOrderByCreatedAtDesc(createdByEmail);
+	}
+
+	public List<Ticket> getTicketsForCurrentRole(Authentication authentication) {
+		List<String> authorities = authentication.getAuthorities().stream()
+				.map(grantedAuthority -> grantedAuthority.getAuthority())
+				.toList();
+
+		if (authorities.contains("ROLE_ADMIN")) {
+			return ticketRepository.findAllByOrderByCreatedAtDesc();
+		}
+
+		if (authorities.contains("ROLE_TECHNICIAN")) {
+			return ticketRepository.findByAssignedTechnicianEmailOrderByCreatedAtDesc(authentication.getName());
+		}
+
+		return ticketRepository.findByCreatedByEmailOrderByCreatedAtDesc(authentication.getName());
 	}
 
 	private String encodeBase64(MultipartFile file) {

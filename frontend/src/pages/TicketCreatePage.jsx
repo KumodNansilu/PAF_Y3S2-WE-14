@@ -237,7 +237,7 @@ function TicketCreatePage() {
       setFormError("");
 
       await createTicket(form, images);
-      navigate("/tickets/my", { state: { created: true } });
+      navigate("/tickets/list", { state: { created: true } });
     } catch (requestError) {
       const message = requestError?.response?.data?.message || "Failed to create ticket. Please try again.";
       setFormError(message);
@@ -439,7 +439,7 @@ function TicketCreatePage() {
           <button type="button" className="btn-secondary" onClick={resetForm} disabled={submitting}>
             Cancel / Reset
           </button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/tickets/my")}>My Tickets</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/tickets/list")}>View Tickets</button>
         </div>
       </form>
       </div>

@@ -22,6 +22,7 @@ public class Ticket {
 	private String contactPhone;
 	private TicketStatus status;
 	private String createdByEmail;
+	private String assignedTechnicianEmail;
 	private List<TicketImage> images = new ArrayList<>();
 	private Instant createdAt;
 	private Instant updatedAt;
@@ -104,6 +105,14 @@ public class Ticket {
 
 	public void setCreatedByEmail(String createdByEmail) {
 		this.createdByEmail = createdByEmail;
+	}
+
+	public String getAssignedTechnicianEmail() {
+		return assignedTechnicianEmail;
+	}
+
+	public void setAssignedTechnicianEmail(String assignedTechnicianEmail) {
+		this.assignedTechnicianEmail = assignedTechnicianEmail;
 	}
 
 	public List<TicketImage> getImages() {

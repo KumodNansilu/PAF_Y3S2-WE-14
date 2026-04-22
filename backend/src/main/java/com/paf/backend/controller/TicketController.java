@@ -31,6 +31,26 @@ public class TicketController {
 		this.ticketService = ticketService;
 	}
 
+	@GetMapping
+	@PreAuthorize("hasAnyRole('USER', 'ADMIN', 'TECHNICIAN')")
+	public List<TicketResponse> getTickets(Authentication authentication) {
+		return ticketService.getTicketsForCurrentRole(authentication).stream()
+				.map(ticket -> new TicketResponse(
+						ticket.getId(),
+						ticket.getResourceOrLocation(),
+						ticket.getCategory(),
+						ticket.getPriority(),
+						ticket.getDescription(),
+						ticket.getContactName(),
+						ticket.getContactEmail(),
+						ticket.getContactPhone(),
+						ticket.getStatus(),
+						ticket.getCreatedByEmail(),
+						ticket.getImages().size(),
+						ticket.getCreatedAt()))
+				.toList();
+	}
+
 	@GetMapping("/my")
 	@PreAuthorize("hasAnyRole('USER', 'ADMIN', 'TECHNICIAN')")
 	public List<TicketResponse> getMyTickets(Authentication authentication) {

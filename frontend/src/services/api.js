@@ -56,6 +56,11 @@ export async function getMyTickets() {
   return response.data;
 }
 
+export async function getTicketsForRole() {
+  const response = await api.get("/api/tickets");
+  return response.data;
+}
+
 export function getGoogleLoginUrl() {
   return `${api.defaults.baseURL}/oauth2/authorization/google`;
 }
