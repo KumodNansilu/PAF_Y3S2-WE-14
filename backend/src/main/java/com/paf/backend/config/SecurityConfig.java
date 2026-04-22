@@ -5,6 +5,12 @@ import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -22,10 +28,14 @@ import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import com.paf.backend.repository.AppUserRepository;
 import com.paf.backend.service.UserPersistenceService;
 
 @Configuration
@@ -41,10 +51,13 @@ public class SecurityConfig {
 
 		return http
 				.cors(Customizer.withDefaults())
-				.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"))
+				.csrf(AbstractHttpConfigurer::disable)
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
 				.authorizeHttpRequests(authorize -> authorize
+						.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 						.requestMatchers("/", "/error", "/login**", "/oauth2/**").permitAll()
+						.requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+						.requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/auth/**").permitAll()
 						.requestMatchers("/api/admin/**").hasRole("ADMIN")
 						.requestMatchers("/api/technician/**").hasAnyRole("TECHNICIAN", "ADMIN")
@@ -55,12 +68,12 @@ public class SecurityConfig {
 								.oidcUserService(customOidcUserService(appProperties, userPersistenceService)))
 						.successHandler(new SimpleUrlAuthenticationSuccessHandler(appProperties.getFrontendUrl())))
 				.logout(logout -> logout
-						.logoutSuccessUrl(appProperties.getFrontendUrl())
+						.logoutUrl("/api/auth/logout")
+						.logoutSuccessHandler((request, response, authentication) -> response.setStatus(200))
 						.invalidateHttpSession(true)
 						.clearAuthentication(true)
 						.deleteCookies("JSESSIONID"))
 				.exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(unauthorizedEntryPoint()))
-				.csrf(AbstractHttpConfigurer::disable)
 				.build();
 	}
 
@@ -126,5 +139,39 @@ public class SecurityConfig {
 	@Bean
 	AuthenticationEntryPoint unauthorizedEntryPoint() {
 		return (request, response, authException) -> response.sendError(401, "Unauthorized");
+	}
+
+	@Bean
+	PasswordEncoder passwordEncoder() {
+		return new BCryptPasswordEncoder();
+	}
+
+	@Bean
+	UserDetailsService userDetailsService(AppUserRepository appUserRepository) {
+		return email -> appUserRepository.findByEmailIgnoreCase(email)
+				.filter(user -> user.getPasswordHash() != null && !user.getPasswordHash().isBlank())
+				.map(user -> {
+					List<String> roles = user.getRoles() == null || user.getRoles().isEmpty()
+							? List.of("ROLE_USER")
+							: user.getRoles();
+					return User.withUsername(user.getEmail())
+							.password(user.getPasswordHash())
+							.authorities(roles.toArray(new String[0]))
+							.build();
+				})
+				.orElseThrow(() -> new UsernameNotFoundException("Invalid email or password"));
+	}
+
+	@Bean
+	AuthenticationProvider authenticationProvider(UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
+		DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+		provider.setUserDetailsService(userDetailsService);
+		provider.setPasswordEncoder(passwordEncoder);
+		return provider;
+	}
+
+	@Bean
+	AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
+		return configuration.getAuthenticationManager();
 	}
 }

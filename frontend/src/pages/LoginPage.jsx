@@ -1,11 +1,17 @@
 import React, { useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
-import { getCurrentUser, getGoogleLoginUrl } from "../services/api";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { getCurrentUser, getGoogleLoginUrl, loginWithEmail } from "../services/api";
+import { useAuth } from "../context/AuthContext";
 import "../styles/LoginPage.css";
 
 function LoginPage() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { setUser } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
 
   const oauthError = useMemo(() => {
@@ -39,6 +45,30 @@ function LoginPage() {
     }
   };
 
+  const handleEmailLogin = async (event) => {
+    event.preventDefault();
+    setError("");
+
+    if (!email || !password) {
+      setError("Enter both email and password to continue.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await loginWithEmail({ email: email.trim(), password });
+      const me = await getCurrentUser();
+      setUser(me?.authenticated ? me : null);
+      const redirectPath = location.state?.from?.pathname || "/";
+      navigate(redirectPath, { replace: true });
+    } catch (requestError) {
+      const serverMessage = requestError?.response?.data?.message;
+      setError(serverMessage || "Email login failed. Please check your credentials.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="login-page">
       <section className="branding-panel" aria-label="Branding panel">
@@ -61,7 +91,64 @@ function LoginPage() {
       <section className="form-panel" aria-label="Login form panel">
         <div className="form-card">
           <h2>Sign in to your account</h2>
-          <p className="form-subtitle">Secure login powered by Google OAuth 2.0</p>
+          <p className="form-subtitle">Use email and password, or continue with Google OAuth 2.0.</p>
+
+          <form className="auth-form" onSubmit={handleEmailLogin}>
+            <div className="form-field">
+              <label className="field-label" htmlFor="email">
+                Email
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                className="text-input"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="you@example.edu"
+              />
+            </div>
+
+            <div className="form-field">
+              <label className="field-label" htmlFor="password">
+                Password
+              </label>
+              <div className="password-field">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  className="text-input password-input"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder="Enter your password"
+                />
+                <button
+                  type="button"
+                  className="toggle-button"
+                  onClick={() => setShowPassword((current) => !current)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? "Hide" : "Show"}
+                </button>
+              </div>
+            </div>
+
+            <div className="auth-links">
+              <Link to="/forgot-password" className="inline-link">
+                Forgot password?
+              </Link>
+              <Link to="/register" className="inline-link">
+                Create an account
+              </Link>
+            </div>
+
+            <button type="submit" className="primary-button" disabled={loading}>
+              Sign in with Email
+            </button>
+          </form>
 
           <button
             type="button"
@@ -81,7 +168,7 @@ function LoginPage() {
 
           {errorMessage ? <p className="error-message">{errorMessage}</p> : null}
 
-          <p className="helper-text">Use your university Google account to login.</p>
+          <p className="helper-text">Use your university Google account or the email form above.</p>
         </div>
       </section>
     </div>

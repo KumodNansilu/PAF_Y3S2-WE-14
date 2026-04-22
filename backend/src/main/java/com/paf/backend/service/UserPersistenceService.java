@@ -48,4 +48,30 @@ public class UserPersistenceService {
 
 		appUserRepository.save(user);
 	}
+
+	public AppUser createLocalUser(String fullName, String email, String passwordHash) {
+		if (email == null || email.isBlank()) {
+			throw new IllegalArgumentException("Email is required");
+		}
+
+		String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
+		Instant now = Instant.now();
+
+		if (appUserRepository.findByEmailIgnoreCase(normalizedEmail).isPresent()) {
+			throw new IllegalStateException("An account with this email already exists");
+		}
+
+		AppUser user = new AppUser();
+		user.setEmail(normalizedEmail);
+		user.setName(fullName == null || fullName.isBlank() ? normalizedEmail : fullName.trim());
+		user.setPasswordHash(passwordHash);
+		user.setPicture("");
+		user.setProvider("local");
+		user.setRoles(List.of("ROLE_USER"));
+		user.setCreatedAt(now);
+		user.setUpdatedAt(now);
+		user.setLastLoginAt(null);
+
+		return appUserRepository.save(user);
+	}
 }

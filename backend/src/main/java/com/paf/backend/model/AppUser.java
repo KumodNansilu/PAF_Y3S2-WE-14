@@ -15,6 +15,7 @@ public class AppUser {
 
 	private String email;
 	private String name;
+	private String passwordHash;
 	private String picture;
 	private String provider;
 	private List<String> roles = new ArrayList<>();
@@ -44,6 +45,14 @@ public class AppUser {
 
 	public void setName(String name) {
 		this.name = name;
+	}
+
+	public String getPasswordHash() {
+		return passwordHash;
+	}
+
+	public void setPasswordHash(String passwordHash) {
+		this.passwordHash = passwordHash;
 	}
 
 	public String getPicture() {

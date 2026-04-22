@@ -14,7 +14,7 @@ export async function getCurrentUser() {
 }
 
 export async function logout() {
-  await api.post("/logout");
+  await api.post("/api/auth/logout");
 }
 
 export async function getAdminPing() {
@@ -24,6 +24,16 @@ export async function getAdminPing() {
 
 export async function getUserPing() {
   const response = await api.get("/api/user/ping");
+  return response.data;
+}
+
+export async function registerUser(payload) {
+  const response = await api.post("/api/auth/register", payload);
+  return response.data;
+}
+
+export async function loginWithEmail(payload) {
+  const response = await api.post("/api/auth/login", payload);
   return response.data;
 }
 
