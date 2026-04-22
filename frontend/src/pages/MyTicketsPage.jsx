@@ -1,7 +1,7 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { getTicketsForRole, updateTicketStatus, assignTechnician, resolveTicket, addComment, editComment, deleteComment, getTicketImages, deleteTicketImage } from "../services/api";
+import { getTicketsForRole, updateTicketStatus, assignTechnician, resolveTicket, addComment, editComment, deleteComment, getTicketImages, deleteTicketImage, updateTicketDetails } from "../services/api";
 import "../styles/MyTicketsPage.css";
 
 function MyTicketsPage() {
@@ -31,6 +31,15 @@ function MyTicketsPage() {
   const [editingCommentId, setEditingCommentId] = React.useState(null);
   const [editingCommentText, setEditingCommentText] = React.useState("");
   const [ticketImages, setTicketImages] = React.useState([]);
+
+  const [isEditingDetails, setIsEditingDetails] = React.useState(false);
+  const [editDetailsForm, setEditDetailsForm] = React.useState({
+    description: "",
+    priority: "",
+    contactName: "",
+    contactEmail: "",
+    contactPhone: ""
+  });
 
   const roles = user?.roles || [];
   const isAdmin = roles.includes("ROLE_ADMIN");
@@ -91,6 +100,14 @@ function MyTicketsPage() {
     setStatusInput(ticket.status);
     setTechnicianEmailInput(ticket.assignedTechnicianEmail || "");
     setResolutionNotesInput(ticket.resolutionNotes || "");
+    setIsEditingDetails(false);
+    setEditDetailsForm({
+      description: ticket.description || "",
+      priority: ticket.priority || "",
+      contactName: ticket.contactName || "",
+      contactEmail: ticket.contactEmail || "",
+      contactPhone: ticket.contactPhone || ""
+    });
     setTicketImages([]);
     if (ticket.imageCount > 0) {
       try {
@@ -185,6 +202,18 @@ function MyTicketsPage() {
       setSelectedTicket(prev => ({ ...prev, imageCount: prev.imageCount - 1 }));
     } catch (err) {
       alert("Failed to delete image: " + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleUpdateDetails = async () => {
+    if (!selectedTicket) return;
+    try {
+      const updatedTicket = await updateTicketDetails(selectedTicket.id, editDetailsForm);
+      await loadTickets();
+      setSelectedTicket(updatedTicket);
+      setIsEditingDetails(false);
+    } catch (err) {
+      alert("Failed to update ticket details: " + (err.response?.data?.message || err.message));
     }
   };
 
@@ -329,7 +358,12 @@ function MyTicketsPage() {
       {selectedTicket && (
         <div className="side-panel">
           <div className="panel-header">
-            <h3>Ticket #{selectedTicket.id.substring(0, 8)}</h3>
+            <div>
+              <h3 style={{ display: "inline-block", marginRight: "1rem" }}>Ticket #{selectedTicket.id.substring(0, 8)}</h3>
+              {(isAdmin || (selectedTicket.createdByEmail === user?.email && selectedTicket.status === "OPEN")) && !isEditingDetails && (
+                <button className="btn-secondary btn-small" onClick={() => setIsEditingDetails(true)}>✎ Edit</button>
+              )}
+            </div>
             <button className="close-btn" onClick={() => setSelectedTicket(null)}>✕</button>
           </div>
           
@@ -341,7 +375,49 @@ function MyTicketsPage() {
               </div>
               <h4 className="detail-title">{selectedTicket.resourceOrLocation}</h4>
               <p className="detail-category">{selectedTicket.category}</p>
-              <p className="detail-desc">{selectedTicket.description}</p>
+              
+              {isEditingDetails ? (
+                <div style={{ marginTop: '1rem', background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <div className="control-group">
+                    <label>Description</label>
+                    <textarea 
+                      value={editDetailsForm.description} 
+                      onChange={e => setEditDetailsForm({...editDetailsForm, description: e.target.value})}
+                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #d9d9e3', minHeight: '80px' }}
+                    />
+                  </div>
+                  <div className="control-group">
+                    <label>Priority</label>
+                    <select 
+                      value={editDetailsForm.priority} 
+                      onChange={e => setEditDetailsForm({...editDetailsForm, priority: e.target.value})}
+                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #d9d9e3' }}
+                    >
+                      <option value="LOW">LOW</option>
+                      <option value="MEDIUM">MEDIUM</option>
+                      <option value="HIGH">HIGH</option>
+                    </select>
+                  </div>
+                  <div className="control-group">
+                    <label>Contact Name</label>
+                    <input type="text" value={editDetailsForm.contactName} onChange={e => setEditDetailsForm({...editDetailsForm, contactName: e.target.value})} style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #d9d9e3' }} />
+                  </div>
+                  <div className="control-group">
+                    <label>Contact Email</label>
+                    <input type="email" value={editDetailsForm.contactEmail} onChange={e => setEditDetailsForm({...editDetailsForm, contactEmail: e.target.value})} style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #d9d9e3' }} />
+                  </div>
+                  <div className="control-group">
+                    <label>Contact Phone</label>
+                    <input type="text" value={editDetailsForm.contactPhone} onChange={e => setEditDetailsForm({...editDetailsForm, contactPhone: e.target.value})} style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #d9d9e3' }} />
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '1rem' }}>
+                    <button className="btn-success btn-small" onClick={handleUpdateDetails}>Save Changes</button>
+                    <button className="btn-secondary btn-small" onClick={() => setIsEditingDetails(false)}>Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <p className="detail-desc">{selectedTicket.description}</p>
+              )}
             </div>
 
             {ticketImages.length > 0 && (
@@ -367,11 +443,13 @@ function MyTicketsPage() {
               </div>
             )}
 
-            <div className="panel-section">
-              <h4>Contact Info</h4>
-              <p>{selectedTicket.contactName} ({selectedTicket.contactEmail})</p>
-              <p>{selectedTicket.contactPhone}</p>
-            </div>
+            {!isEditingDetails && (
+              <div className="panel-section">
+                <h4>Contact Info</h4>
+                <p>{selectedTicket.contactName} ({selectedTicket.contactEmail})</p>
+                <p>{selectedTicket.contactPhone}</p>
+              </div>
+            )}
 
             {/* ROLE BASED CONTROLS */}
             <div className="panel-section controls-section">

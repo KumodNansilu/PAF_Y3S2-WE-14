@@ -14,6 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.security.access.AccessDeniedException;
 
 import com.paf.backend.controller.CreateTicketRequest;
+import com.paf.backend.controller.UpdateTicketDetailsRequest;
 import com.paf.backend.model.Ticket;
 import com.paf.backend.model.TicketImage;
 import com.paf.backend.model.TicketStatus;
@@ -123,6 +124,33 @@ public class TicketService {
 		}
 
 		ticket.setUpdatedAt(Instant.now());
+		return ticketRepository.save(ticket);
+	}
+
+	public Ticket updateTicketDetails(String ticketId, UpdateTicketDetailsRequest request, Authentication authentication) {
+		Ticket ticket = ticketRepository.findById(ticketId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket not found"));
+
+		List<String> authorities = authentication.getAuthorities().stream()
+				.map(grantedAuthority -> grantedAuthority.getAuthority())
+				.toList();
+
+		if (!authorities.contains("ROLE_ADMIN")) {
+			if (!ticket.getCreatedByEmail().equals(authentication.getName())) {
+				throw new AccessDeniedException("You can only edit your own tickets");
+			}
+			if (ticket.getStatus() != TicketStatus.OPEN) {
+				throw new AccessDeniedException("You can only edit tickets before they begin processing (OPEN status)");
+			}
+		}
+
+		ticket.setDescription(request.description().trim());
+		ticket.setPriority(request.priority());
+		ticket.setContactName(request.contactName().trim());
+		ticket.setContactEmail(request.contactEmail().trim().toLowerCase(Locale.ROOT));
+		ticket.setContactPhone(request.contactPhone().trim());
+		ticket.setUpdatedAt(Instant.now());
+
 		return ticketRepository.save(ticket);
 	}
 

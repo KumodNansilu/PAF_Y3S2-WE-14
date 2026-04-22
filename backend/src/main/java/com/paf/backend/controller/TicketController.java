@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -114,6 +115,31 @@ public class TicketController {
 			@Valid @RequestBody UpdateTicketStatusRequest request,
 			Authentication authentication) {
 		Ticket updatedTicket = ticketService.updateTicketStatus(id, request.status(), authentication);
+		return new TicketResponse(
+				updatedTicket.getId(),
+				updatedTicket.getResourceOrLocation(),
+				updatedTicket.getCategory(),
+				updatedTicket.getPriority(),
+				updatedTicket.getDescription(),
+				updatedTicket.getContactName(),
+				updatedTicket.getContactEmail(),
+				updatedTicket.getContactPhone(),
+				updatedTicket.getStatus(),
+				updatedTicket.getCreatedByEmail(),
+				updatedTicket.getAssignedTechnicianEmail(),
+				updatedTicket.getResolutionNotes(),
+				updatedTicket.getImages().size(),
+				updatedTicket.getComments(),
+				updatedTicket.getCreatedAt());
+	}
+
+	@PutMapping("/{id}/details")
+	@PreAuthorize("hasAnyRole('USER', 'ADMIN', 'TECHNICIAN')")
+	public TicketResponse updateTicketDetails(
+			@PathVariable String id,
+			@Valid @RequestBody UpdateTicketDetailsRequest request,
+			Authentication authentication) {
+		Ticket updatedTicket = ticketService.updateTicketDetails(id, request, authentication);
 		return new TicketResponse(
 				updatedTicket.getId(),
 				updatedTicket.getResourceOrLocation(),

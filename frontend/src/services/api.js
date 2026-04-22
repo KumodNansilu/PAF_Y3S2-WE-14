@@ -101,6 +101,11 @@ export async function deleteTicketImage(id, fileName) {
   return response.data;
 }
 
+export async function updateTicketDetails(id, details) {
+  const response = await api.put(`/api/tickets/${id}/details`, details);
+  return response.data;
+}
+
 export function getGoogleLoginUrl() {
   return `${api.defaults.baseURL}/oauth2/authorization/google`;
 }
