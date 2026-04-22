@@ -47,6 +47,7 @@ public class TicketController {
 						ticket.getStatus(),
 						ticket.getCreatedByEmail(),
 						ticket.getAssignedTechnicianEmail(),
+						ticket.getResolutionNotes(),
 						ticket.getImages().size(),
 						ticket.getCreatedAt()))
 				.toList();
@@ -68,6 +69,7 @@ public class TicketController {
 						ticket.getStatus(),
 						ticket.getCreatedByEmail(),
 						ticket.getAssignedTechnicianEmail(),
+						ticket.getResolutionNotes(),
 						ticket.getImages().size(),
 						ticket.getCreatedAt()))
 				.toList();
@@ -93,6 +95,7 @@ public class TicketController {
 				savedTicket.getStatus(),
 				savedTicket.getCreatedByEmail(),
 						savedTicket.getAssignedTechnicianEmail(),
+					savedTicket.getResolutionNotes(),
 				savedTicket.getImages().size(),
 				savedTicket.getCreatedAt());
 	}

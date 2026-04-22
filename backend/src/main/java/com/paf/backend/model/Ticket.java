@@ -23,6 +23,7 @@ public class Ticket {
 	private TicketStatus status;
 	private String createdByEmail;
 	private String assignedTechnicianEmail;
+	private String resolutionNotes;
 	private List<TicketImage> images = new ArrayList<>();
 	private Instant createdAt;
 	private Instant updatedAt;
@@ -113,6 +114,14 @@ public class Ticket {
 
 	public void setAssignedTechnicianEmail(String assignedTechnicianEmail) {
 		this.assignedTechnicianEmail = assignedTechnicianEmail;
+	}
+
+	public String getResolutionNotes() {
+		return resolutionNotes;
+	}
+
+	public void setResolutionNotes(String resolutionNotes) {
+		this.resolutionNotes = resolutionNotes;
 	}
 
 	public List<TicketImage> getImages() {

@@ -214,10 +214,36 @@ function MyTicketsPage() {
               </div>
               {openTicketId === ticket.id ? (
                 <div className="my-ticket-detail">
+                  <div className="detail-grid">
+                    <div>
+                      <strong>Ticket ID</strong>
+                      <span>#{ticket.id}</span>
+                    </div>
+                    <div>
+                      <strong>Category</strong>
+                      <span>{ticket.category || "N/A"}</span>
+                    </div>
+                    <div>
+                      <strong>Priority</strong>
+                      <span>{ticket.priority || "N/A"}</span>
+                    </div>
+                    <div>
+                      <strong>Status</strong>
+                      <span>{ticket.status || "N/A"}</span>
+                    </div>
+                    <div>
+                      <strong>Resource / Location</strong>
+                      <span>{ticket.resourceOrLocation || "N/A"}</span>
+                    </div>
+                    <div>
+                      <strong>Assigned Technician</strong>
+                      <span>{ticket.assignedTechnicianEmail || "Unassigned"}</span>
+                    </div>
+                  </div>
                   <p><strong>Description:</strong> {ticket.description || "No description provided."}</p>
                   <p><strong>Contact:</strong> {ticket.contactName || "N/A"} | {ticket.contactEmail || "N/A"} | {ticket.contactPhone || "N/A"}</p>
                   <p><strong>Created By:</strong> {ticket.createdByEmail || "N/A"}</p>
-                  <p><strong>Assigned Technician:</strong> {ticket.assignedTechnicianEmail || "Unassigned"}</p>
+                  <p><strong>Resolution Notes:</strong> {ticket.resolutionNotes || "Not available yet."}</p>
                 </div>
               ) : null}
             </article>

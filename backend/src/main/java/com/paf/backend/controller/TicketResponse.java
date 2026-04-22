@@ -17,6 +17,7 @@ public record TicketResponse(
 		TicketStatus status,
 		String createdByEmail,
 		String assignedTechnicianEmail,
+		String resolutionNotes,
 		int imageCount,
 		Instant createdAt) {
 }
