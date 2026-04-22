@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -52,6 +53,7 @@ public class TicketController {
 						ticket.getAssignedTechnicianEmail(),
 						ticket.getResolutionNotes(),
 						ticket.getImages().size(),
+						ticket.getComments(),
 						ticket.getCreatedAt()))
 				.toList();
 	}
@@ -74,6 +76,7 @@ public class TicketController {
 						ticket.getAssignedTechnicianEmail(),
 						ticket.getResolutionNotes(),
 						ticket.getImages().size(),
+						ticket.getComments(),
 						ticket.getCreatedAt()))
 				.toList();
 	}
@@ -97,9 +100,10 @@ public class TicketController {
 				savedTicket.getContactPhone(),
 				savedTicket.getStatus(),
 				savedTicket.getCreatedByEmail(),
-						savedTicket.getAssignedTechnicianEmail(),
-					savedTicket.getResolutionNotes(),
+				savedTicket.getAssignedTechnicianEmail(),
+				savedTicket.getResolutionNotes(),
 				savedTicket.getImages().size(),
+				savedTicket.getComments(),
 				savedTicket.getCreatedAt());
 	}
 
@@ -124,6 +128,7 @@ public class TicketController {
 				updatedTicket.getAssignedTechnicianEmail(),
 				updatedTicket.getResolutionNotes(),
 				updatedTicket.getImages().size(),
+				updatedTicket.getComments(),
 				updatedTicket.getCreatedAt());
 	}
 
@@ -148,6 +153,7 @@ public class TicketController {
 				updatedTicket.getAssignedTechnicianEmail(),
 				updatedTicket.getResolutionNotes(),
 				updatedTicket.getImages().size(),
+				updatedTicket.getComments(),
 				updatedTicket.getCreatedAt());
 	}
 
@@ -172,6 +178,83 @@ public class TicketController {
 				updatedTicket.getAssignedTechnicianEmail(),
 				updatedTicket.getResolutionNotes(),
 				updatedTicket.getImages().size(),
+				updatedTicket.getComments(),
+				updatedTicket.getCreatedAt());
+	}
+
+	@PostMapping("/{id}/comments")
+	@PreAuthorize("hasAnyRole('USER', 'ADMIN', 'TECHNICIAN')")
+	public TicketResponse addComment(
+			@PathVariable String id,
+			@Valid @RequestBody CommentRequest request,
+			Authentication authentication) {
+		Ticket updatedTicket = ticketService.addComment(id, request.text(), authentication);
+		return new TicketResponse(
+				updatedTicket.getId(),
+				updatedTicket.getResourceOrLocation(),
+				updatedTicket.getCategory(),
+				updatedTicket.getPriority(),
+				updatedTicket.getDescription(),
+				updatedTicket.getContactName(),
+				updatedTicket.getContactEmail(),
+				updatedTicket.getContactPhone(),
+				updatedTicket.getStatus(),
+				updatedTicket.getCreatedByEmail(),
+				updatedTicket.getAssignedTechnicianEmail(),
+				updatedTicket.getResolutionNotes(),
+				updatedTicket.getImages().size(),
+				updatedTicket.getComments(),
+				updatedTicket.getCreatedAt());
+	}
+
+	@PatchMapping("/{id}/comments/{commentId}")
+	@PreAuthorize("hasAnyRole('USER', 'ADMIN', 'TECHNICIAN')")
+	public TicketResponse editComment(
+			@PathVariable String id,
+			@PathVariable String commentId,
+			@Valid @RequestBody CommentRequest request,
+			Authentication authentication) {
+		Ticket updatedTicket = ticketService.editComment(id, commentId, request.text(), authentication);
+		return new TicketResponse(
+				updatedTicket.getId(),
+				updatedTicket.getResourceOrLocation(),
+				updatedTicket.getCategory(),
+				updatedTicket.getPriority(),
+				updatedTicket.getDescription(),
+				updatedTicket.getContactName(),
+				updatedTicket.getContactEmail(),
+				updatedTicket.getContactPhone(),
+				updatedTicket.getStatus(),
+				updatedTicket.getCreatedByEmail(),
+				updatedTicket.getAssignedTechnicianEmail(),
+				updatedTicket.getResolutionNotes(),
+				updatedTicket.getImages().size(),
+				updatedTicket.getComments(),
+				updatedTicket.getCreatedAt());
+	}
+
+	@DeleteMapping("/{id}/comments/{commentId}")
+	@PreAuthorize("hasAnyRole('USER', 'ADMIN', 'TECHNICIAN')")
+	public TicketResponse deleteComment(
+			@PathVariable String id,
+			@PathVariable String commentId,
+			Authentication authentication) {
+		Ticket updatedTicket = ticketService.deleteComment(id, commentId, authentication);
+		return new TicketResponse(
+				updatedTicket.getId(),
+				updatedTicket.getResourceOrLocation(),
+				updatedTicket.getCategory(),
+				updatedTicket.getPriority(),
+				updatedTicket.getDescription(),
+				updatedTicket.getContactName(),
+				updatedTicket.getContactEmail(),
+				updatedTicket.getContactPhone(),
+				updatedTicket.getStatus(),
+				updatedTicket.getCreatedByEmail(),
+				updatedTicket.getAssignedTechnicianEmail(),
+				updatedTicket.getResolutionNotes(),
+				updatedTicket.getImages().size(),
+				updatedTicket.getComments(),
 				updatedTicket.getCreatedAt());
 	}
 }

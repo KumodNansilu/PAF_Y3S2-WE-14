@@ -26,6 +26,7 @@ public class Ticket {
 	private String resolutionNotes;
 	private List<TicketImage> images = new ArrayList<>();
 	private List<TicketAssignmentHistory> assignmentHistory = new ArrayList<>();
+	private List<TicketComment> comments = new ArrayList<>();
 	private Instant createdAt;
 	private Instant updatedAt;
 
@@ -139,6 +140,14 @@ public class Ticket {
 
 	public void setAssignmentHistory(List<TicketAssignmentHistory> assignmentHistory) {
 		this.assignmentHistory = assignmentHistory;
+	}
+
+	public List<TicketComment> getComments() {
+		return comments;
+	}
+
+	public void setComments(List<TicketComment> comments) {
+		this.comments = comments;
 	}
 
 	public Instant getCreatedAt() {

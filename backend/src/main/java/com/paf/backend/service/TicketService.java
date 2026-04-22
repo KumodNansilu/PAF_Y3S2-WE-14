@@ -18,7 +18,9 @@ import com.paf.backend.model.Ticket;
 import com.paf.backend.model.TicketImage;
 import com.paf.backend.model.TicketStatus;
 import com.paf.backend.model.TicketAssignmentHistory;
+import com.paf.backend.model.TicketComment;
 import com.paf.backend.repository.TicketRepository;
+import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 
@@ -162,6 +164,63 @@ public class TicketService {
 
 		ticket.setResolutionNotes(resolutionNotes);
 		ticket.setStatus(TicketStatus.RESOLVED);
+		ticket.setUpdatedAt(Instant.now());
+		return ticketRepository.save(ticket);
+	}
+
+	public Ticket addComment(String ticketId, String text, Authentication authentication) {
+		Ticket ticket = ticketRepository.findById(ticketId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket not found"));
+
+		TicketComment comment = new TicketComment();
+		comment.setId(UUID.randomUUID().toString());
+		comment.setText(text.trim());
+		comment.setAuthorEmail(authentication.getName());
+		comment.setCreatedAt(Instant.now());
+		comment.setUpdatedAt(Instant.now());
+
+		ticket.getComments().add(comment);
+		ticket.setUpdatedAt(Instant.now());
+		return ticketRepository.save(ticket);
+	}
+
+	public Ticket editComment(String ticketId, String commentId, String text, Authentication authentication) {
+		Ticket ticket = ticketRepository.findById(ticketId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket not found"));
+
+		TicketComment comment = ticket.getComments().stream()
+				.filter(c -> c.getId().equals(commentId))
+				.findFirst()
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Comment not found"));
+
+		if (!comment.getAuthorEmail().equals(authentication.getName())) {
+			throw new AccessDeniedException("You can only edit your own comments");
+		}
+
+		comment.setText(text.trim());
+		comment.setUpdatedAt(Instant.now());
+		ticket.setUpdatedAt(Instant.now());
+		return ticketRepository.save(ticket);
+	}
+
+	public Ticket deleteComment(String ticketId, String commentId, Authentication authentication) {
+		Ticket ticket = ticketRepository.findById(ticketId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket not found"));
+
+		TicketComment comment = ticket.getComments().stream()
+				.filter(c -> c.getId().equals(commentId))
+				.findFirst()
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Comment not found"));
+
+		List<String> authorities = authentication.getAuthorities().stream()
+				.map(a -> a.getAuthority())
+				.toList();
+
+		if (!comment.getAuthorEmail().equals(authentication.getName()) && !authorities.contains("ROLE_ADMIN")) {
+			throw new AccessDeniedException("Only the author or an admin can delete this comment");
+		}
+
+		ticket.getComments().removeIf(c -> c.getId().equals(commentId));
 		ticket.setUpdatedAt(Instant.now());
 		return ticketRepository.save(ticket);
 	}

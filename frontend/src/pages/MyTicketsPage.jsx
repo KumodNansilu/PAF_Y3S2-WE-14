@@ -1,7 +1,7 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { getTicketsForRole, updateTicketStatus, assignTechnician, resolveTicket } from "../services/api";
+import { getTicketsForRole, updateTicketStatus, assignTechnician, resolveTicket, addComment, editComment, deleteComment } from "../services/api";
 import "../styles/MyTicketsPage.css";
 
 function MyTicketsPage() {
@@ -27,9 +27,9 @@ function MyTicketsPage() {
   const [statusInput, setStatusInput] = React.useState("");
   const [resolutionNotesInput, setResolutionNotesInput] = React.useState("");
   
-  // For simulating comments
   const [commentInput, setCommentInput] = React.useState("");
-  const [mockComments, setMockComments] = React.useState({}); // { ticketId: [{ id, text, author, time }] }
+  const [editingCommentId, setEditingCommentId] = React.useState(null);
+  const [editingCommentText, setEditingCommentText] = React.useState("");
 
   const roles = user?.roles || [];
   const isAdmin = roles.includes("ROLE_ADMIN");
@@ -127,19 +127,41 @@ function MyTicketsPage() {
     }
   };
 
-  const handleAddComment = () => {
+  const handleAddComment = async () => {
     if (!commentInput.trim() || !selectedTicket) return;
-    const newComment = {
-      id: Date.now(),
-      text: commentInput,
-      author: user?.name || "User",
-      time: new Date().toLocaleTimeString()
-    };
-    setMockComments(prev => ({
-      ...prev,
-      [selectedTicket.id]: [...(prev[selectedTicket.id] || []), newComment]
-    }));
-    setCommentInput("");
+    try {
+      const updatedTicket = await addComment(selectedTicket.id, commentInput);
+      await loadTickets();
+      setSelectedTicket(updatedTicket);
+      setCommentInput("");
+    } catch (err) {
+      alert("Failed to add comment: " + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleEditCommentSubmit = async (commentId) => {
+    if (!editingCommentText.trim() || !selectedTicket) return;
+    try {
+      const updatedTicket = await editComment(selectedTicket.id, commentId, editingCommentText);
+      await loadTickets();
+      setSelectedTicket(updatedTicket);
+      setEditingCommentId(null);
+      setEditingCommentText("");
+    } catch (err) {
+      alert("Failed to edit comment: " + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    if (!selectedTicket) return;
+    if (!window.confirm("Are you sure you want to delete this comment?")) return;
+    try {
+      const updatedTicket = await deleteComment(selectedTicket.id, commentId);
+      await loadTickets();
+      setSelectedTicket(updatedTicket);
+    } catch (err) {
+      alert("Failed to delete comment: " + (err.response?.data?.message || err.message));
+    }
   };
 
   return (
@@ -370,14 +392,40 @@ function MyTicketsPage() {
               <h4>Activity & Comments</h4>
               <div className="comments-list">
                 <div className="comment system-comment">
-                  <strong>System:</strong> Ticket created by {selectedTicket.createdByEmail}.
+                  <strong>System:</strong> Ticket created by {selectedTicket.createdByEmail} on {new Date(selectedTicket.createdAt).toLocaleString()}.
                 </div>
-                {(mockComments[selectedTicket.id] || []).map(c => (
-                  <div key={c.id} className="comment user-comment">
-                    <strong>{c.author}</strong> <span className="time">{c.time}</span>
-                    <p>{c.text}</p>
-                  </div>
-                ))}
+                {(selectedTicket.comments || []).map(c => {
+                  const isAuthor = c.authorEmail === user?.email;
+                  const canDelete = isAuthor || isAdmin;
+                  
+                  if (editingCommentId === c.id) {
+                    return (
+                      <div key={c.id} className="comment edit-mode-comment">
+                        <textarea value={editingCommentText} onChange={e => setEditingCommentText(e.target.value)} style={{ width: '100%', marginBottom: '8px' }} />
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button className="btn-success btn-small" onClick={() => handleEditCommentSubmit(c.id)}>Save</button>
+                          <button className="btn-secondary btn-small" onClick={() => setEditingCommentId(null)}>Cancel</button>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div key={c.id} className="comment user-comment">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <strong>{c.authorEmail}</strong> <span className="time">{new Date(c.createdAt).toLocaleString()}</span>
+                          {c.updatedAt !== c.createdAt && <span className="time" style={{marginLeft: '4px'}}>(edited)</span>}
+                        </div>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          {isAuthor && <button className="btn-secondary btn-small" onClick={() => { setEditingCommentId(c.id); setEditingCommentText(c.text); }}>Edit</button>}
+                          {canDelete && <button className="btn-secondary btn-small" style={{ color: 'red' }} onClick={() => handleDeleteComment(c.id)}>Delete</button>}
+                        </div>
+                      </div>
+                      <p>{c.text}</p>
+                    </div>
+                  );
+                })}
               </div>
               <div className="add-comment">
                 <input type="text" value={commentInput} onChange={e => setCommentInput(e.target.value)} placeholder="Add a comment..." onKeyDown={e => e.key === 'Enter' && handleAddComment()} />
