@@ -2,10 +2,7 @@ import axios from "axios";
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL || "http://localhost:8080",
-  withCredentials: true,
-  headers: {
-    "Content-Type": "application/json"
-  }
+  withCredentials: true
 });
 
 export async function getCurrentUser() {
@@ -34,6 +31,28 @@ export async function registerUser(payload) {
 
 export async function loginWithEmail(payload) {
   const response = await api.post("/api/auth/login", payload);
+  return response.data;
+}
+
+export async function createTicket(payload, images = []) {
+  const formData = new FormData();
+  formData.append(
+    "payload",
+    new Blob([JSON.stringify(payload)], {
+      type: "application/json"
+    })
+  );
+
+  images.slice(0, 3).forEach((image) => {
+    formData.append("images", image);
+  });
+
+  const response = await api.post("/api/tickets", formData);
+  return response.data;
+}
+
+export async function getMyTickets() {
+  const response = await api.get("/api/tickets/my");
   return response.data;
 }
 

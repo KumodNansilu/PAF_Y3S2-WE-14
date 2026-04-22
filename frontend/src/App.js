@@ -6,6 +6,8 @@ import LoginPage from "./pages/LoginPage";
 import RegistrationPage from "./pages/RegistrationPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import Dashboard from "./pages/Dashboard";
+import TicketCreatePage from "./pages/TicketCreatePage";
+import MyTicketsPage from "./pages/MyTicketsPage";
 import UnauthorizedPage from "./pages/UnauthorizedPage";
 import "./styles/AppShell.css";
 
@@ -35,7 +37,8 @@ function AppShell() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/resources" element={<SimplePage title="Resource Management" />} />
           <Route path="/bookings" element={<SimplePage title="Booking Management" />} />
-          <Route path="/tickets" element={<SimplePage title="Ticket Management" />} />
+          <Route path="/tickets" element={<TicketCreatePage />} />
+          <Route path="/tickets/my" element={<MyTicketsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/search" element={<SearchResultsPage />} />
           <Route

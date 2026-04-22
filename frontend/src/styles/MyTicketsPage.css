@@ -1,0 +1,129 @@
+.my-tickets-page {
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.my-tickets-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.my-tickets-head h2 {
+  margin: 0;
+}
+
+.my-tickets-head p {
+  margin: 0.3rem 0 0;
+  color: var(--ink-soft);
+}
+
+.my-tickets-head button {
+  border: none;
+  border-radius: 12px;
+  background: var(--brand);
+  color: #fff;
+  padding: 0.65rem 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.my-ticket-success,
+.my-ticket-error,
+.my-ticket-loading,
+.my-ticket-empty {
+  border-radius: 12px;
+  padding: 0.75rem 0.9rem;
+  margin: 0 0 1rem;
+}
+
+.my-ticket-success {
+  color: #125635;
+  background: #eaf7ef;
+  border: 1px solid #b8dfc6;
+}
+
+.my-ticket-error {
+  color: #8b1d13;
+  background: #fdeceb;
+  border: 1px solid #f4c5c1;
+}
+
+.my-ticket-loading,
+.my-ticket-empty {
+  color: var(--ink-soft);
+  background: #f4faf8;
+  border: 1px solid var(--line);
+}
+
+.my-ticket-list {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.my-ticket-card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  padding: 0.95rem;
+  box-shadow: 0 8px 22px rgba(15, 61, 52, 0.05);
+}
+
+.my-ticket-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+
+.my-ticket-row h3 {
+  margin: 0;
+}
+
+.my-ticket-card p {
+  margin: 0.55rem 0;
+}
+
+.my-ticket-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.my-ticket-meta span {
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #f5fbfa;
+  font-size: 0.8rem;
+  padding: 0.25rem 0.6rem;
+}
+
+.priority-pill.priority-LOW {
+  color: #217946;
+  border-color: #a4dab8;
+  background: #ebf7f0;
+}
+
+.priority-pill.priority-MEDIUM {
+  color: #925f0b;
+  border-color: #e8cb96;
+  background: #fff6e6;
+}
+
+.priority-pill.priority-HIGH {
+  color: #a1261f;
+  border-color: #efb2ae;
+  background: #ffeceb;
+}
+
+@media (max-width: 720px) {
+  .my-tickets-head {
+    flex-direction: column;
+  }
+
+  .my-tickets-head button {
+    width: 100%;
+  }
+}
