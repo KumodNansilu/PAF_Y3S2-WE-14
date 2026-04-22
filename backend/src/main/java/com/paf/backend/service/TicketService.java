@@ -17,6 +17,7 @@ import com.paf.backend.controller.CreateTicketRequest;
 import com.paf.backend.model.Ticket;
 import com.paf.backend.model.TicketImage;
 import com.paf.backend.model.TicketStatus;
+import com.paf.backend.model.TicketAssignmentHistory;
 import com.paf.backend.repository.TicketRepository;
 
 import org.springframework.http.HttpStatus;
@@ -114,6 +115,30 @@ public class TicketService {
 		} else {
 			throw new AccessDeniedException("You do not have permission to update ticket status");
 		}
+
+		ticket.setUpdatedAt(Instant.now());
+		return ticketRepository.save(ticket);
+	}
+
+	public Ticket assignTechnician(String ticketId, String technicianEmail, Authentication authentication) {
+		Ticket ticket = ticketRepository.findById(ticketId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket not found"));
+
+		List<String> authorities = authentication.getAuthorities().stream()
+				.map(grantedAuthority -> grantedAuthority.getAuthority())
+				.toList();
+
+		if (!authorities.contains("ROLE_ADMIN")) {
+			throw new AccessDeniedException("Only admins can assign technicians");
+		}
+
+		ticket.setAssignedTechnicianEmail(technicianEmail);
+
+		TicketAssignmentHistory history = new TicketAssignmentHistory();
+		history.setAssignedTechnicianEmail(technicianEmail);
+		history.setAssignedByEmail(authentication.getName());
+		history.setAssignedAt(Instant.now());
+		ticket.getAssignmentHistory().add(history);
 
 		ticket.setUpdatedAt(Instant.now());
 		return ticketRepository.save(ticket);

@@ -126,4 +126,28 @@ public class TicketController {
 				updatedTicket.getImages().size(),
 				updatedTicket.getCreatedAt());
 	}
+
+	@PatchMapping("/{id}/assign")
+	@PreAuthorize("hasRole('ADMIN')")
+	public TicketResponse assignTechnician(
+			@PathVariable String id,
+			@Valid @RequestBody AssignTechnicianRequest request,
+			Authentication authentication) {
+		Ticket updatedTicket = ticketService.assignTechnician(id, request.technicianEmail(), authentication);
+		return new TicketResponse(
+				updatedTicket.getId(),
+				updatedTicket.getResourceOrLocation(),
+				updatedTicket.getCategory(),
+				updatedTicket.getPriority(),
+				updatedTicket.getDescription(),
+				updatedTicket.getContactName(),
+				updatedTicket.getContactEmail(),
+				updatedTicket.getContactPhone(),
+				updatedTicket.getStatus(),
+				updatedTicket.getCreatedByEmail(),
+				updatedTicket.getAssignedTechnicianEmail(),
+				updatedTicket.getResolutionNotes(),
+				updatedTicket.getImages().size(),
+				updatedTicket.getCreatedAt());
+	}
 }

@@ -255,7 +255,7 @@ function ProtectedLayout() {
             </NavLink>
             <NavLink to="/resources">Resource Management</NavLink>
             <NavLink to="/bookings">Booking Management</NavLink>
-            <NavLink to="/tickets">Ticket Management</NavLink>
+            <NavLink to="/tickets/list">Ticket Management</NavLink>
           </nav>
         </aside>
 

@@ -25,6 +25,7 @@ public class Ticket {
 	private String assignedTechnicianEmail;
 	private String resolutionNotes;
 	private List<TicketImage> images = new ArrayList<>();
+	private List<TicketAssignmentHistory> assignmentHistory = new ArrayList<>();
 	private Instant createdAt;
 	private Instant updatedAt;
 
@@ -130,6 +131,14 @@ public class Ticket {
 
 	public void setImages(List<TicketImage> images) {
 		this.images = images;
+	}
+
+	public List<TicketAssignmentHistory> getAssignmentHistory() {
+		return assignmentHistory;
+	}
+
+	public void setAssignmentHistory(List<TicketAssignmentHistory> assignmentHistory) {
+		this.assignmentHistory = assignmentHistory;
 	}
 
 	public Instant getCreatedAt() {

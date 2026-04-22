@@ -1,18 +1,19 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { getTicketsForRole } from "../services/api";
+import { getTicketsForRole, updateTicketStatus, assignTechnician } from "../services/api";
 import "../styles/MyTicketsPage.css";
 
 function MyTicketsPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  
   const showSuccess = Boolean(location.state?.created);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState("");
   const [tickets, setTickets] = React.useState([]);
-  const [openTicketId, setOpenTicketId] = React.useState("");
+  
   const [searchText, setSearchText] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState("");
   const [priorityFilter, setPriorityFilter] = React.useState("");
@@ -20,45 +21,53 @@ function MyTicketsPage() {
   const [dateFrom, setDateFrom] = React.useState("");
   const [dateTo, setDateTo] = React.useState("");
 
-  const roleLabel = React.useMemo(() => {
-    const roles = user?.roles || [];
-    if (roles.includes("ROLE_ADMIN")) {
-      return "All Tickets";
+  const [selectedTicket, setSelectedTicket] = React.useState(null);
+
+  const [technicianEmailInput, setTechnicianEmailInput] = React.useState("");
+  const [statusInput, setStatusInput] = React.useState("");
+  
+  // For simulating comments
+  const [commentInput, setCommentInput] = React.useState("");
+  const [mockComments, setMockComments] = React.useState({}); // { ticketId: [{ id, text, author, time }] }
+
+  const roles = user?.roles || [];
+  const isAdmin = roles.includes("ROLE_ADMIN");
+  const isTechnician = roles.includes("ROLE_TECHNICIAN");
+
+  const loadTickets = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await getTicketsForRole();
+      setTickets(Array.isArray(data) ? data : []);
+      setError("");
+    } catch (requestError) {
+      setError(requestError?.response?.data?.message || "Failed to load tickets.");
+    } finally {
+      setLoading(false);
     }
-    if (roles.includes("ROLE_TECHNICIAN")) {
-      return "Assigned Tickets";
-    }
-    return "My Tickets";
-  }, [user]);
+  }, []);
+
+  React.useEffect(() => {
+    let active = true;
+    loadTickets().then(() => {
+      if (!active) return;
+    });
+    return () => { active = false; };
+  }, [loadTickets]);
 
   const filteredTickets = React.useMemo(() => {
     const search = searchText.trim().toLowerCase();
-
     return tickets.filter((ticket) => {
       const ticketDate = ticket.createdAt ? new Date(ticket.createdAt) : null;
       const matchesSearch = !search || [
-        ticket.id,
-        ticket.resourceOrLocation,
-        ticket.category,
-        ticket.description,
-        ticket.createdByEmail,
-        ticket.assignedTechnicianEmail,
-        ticket.contactName,
-        ticket.contactEmail,
-        ticket.contactPhone,
-        ticket.priority,
-        ticket.status
-      ]
-        .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(search));
+        ticket.id, ticket.resourceOrLocation, ticket.category, ticket.description,
+        ticket.createdByEmail, ticket.assignedTechnicianEmail, ticket.contactName
+      ].filter(Boolean).some((value) => String(value).toLowerCase().includes(search));
 
       const matchesStatus = !statusFilter || ticket.status === statusFilter;
       const matchesPriority = !priorityFilter || ticket.priority === priorityFilter;
-
       const assignedValue = assignedTechnicianFilter.trim().toLowerCase();
-      const matchesAssignedTechnician =
-        !assignedValue || String(ticket.assignedTechnicianEmail || "unassigned").toLowerCase().includes(assignedValue);
-
+      const matchesAssignedTechnician = !assignedValue || String(ticket.assignedTechnicianEmail || "unassigned").toLowerCase().includes(assignedValue);
       const matchesFrom = !dateFrom || !ticketDate || ticketDate >= new Date(`${dateFrom}T00:00:00`);
       const matchesTo = !dateTo || !ticketDate || ticketDate <= new Date(`${dateTo}T23:59:59.999`);
 
@@ -66,191 +75,291 @@ function MyTicketsPage() {
     });
   }, [tickets, searchText, statusFilter, priorityFilter, assignedTechnicianFilter, dateFrom, dateTo]);
 
-  const clearFilters = () => {
-    setSearchText("");
-    setStatusFilter("");
-    setPriorityFilter("");
-    setAssignedTechnicianFilter("");
-    setDateFrom("");
-    setDateTo("");
+  // KPIs
+  const totalTickets = tickets.length;
+  const openTickets = tickets.filter(t => t.status === "OPEN").length;
+  const inProgressTickets = tickets.filter(t => t.status === "IN_PROGRESS").length;
+  const resolvedTickets = tickets.filter(t => t.status === "RESOLVED").length;
+  const closedTickets = tickets.filter(t => t.status === "CLOSED").length;
+  const rejectedTickets = tickets.filter(t => t.status === "REJECTED").length;
+  const highPriorityTickets = tickets.filter(t => t.priority === "HIGH").length;
+
+  const handleTicketClick = (ticket) => {
+    setSelectedTicket(ticket);
+    setStatusInput(ticket.status);
+    setTechnicianEmailInput(ticket.assignedTechnicianEmail || "");
   };
 
-  React.useEffect(() => {
-    let active = true;
+  const handleAssign = async () => {
+    if (!selectedTicket || !technicianEmailInput) return;
+    try {
+      await assignTechnician(selectedTicket.id, technicianEmailInput);
+      await loadTickets();
+      setSelectedTicket({ ...selectedTicket, assignedTechnicianEmail: technicianEmailInput });
+    } catch (err) {
+      alert("Failed to assign technician: " + (err.response?.data?.message || err.message));
+    }
+  };
 
-    const loadTickets = async () => {
-      try {
-        setLoading(true);
-        const data = await getTicketsForRole();
-        if (active) {
-          setTickets(Array.isArray(data) ? data : []);
-          setError("");
-        }
-      } catch (requestError) {
-        if (active) {
-          setError(requestError?.response?.data?.message || "Failed to load tickets.");
-        }
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
-    };
+  const handleStatusChange = async (newStatus) => {
+    if (!selectedTicket || !newStatus) return;
+    try {
+      await updateTicketStatus(selectedTicket.id, newStatus);
+      await loadTickets();
+      setSelectedTicket({ ...selectedTicket, status: newStatus });
+      setStatusInput(newStatus);
+    } catch (err) {
+      alert("Failed to update status: " + (err.response?.data?.message || err.message));
+    }
+  };
 
-    loadTickets();
-    return () => {
-      active = false;
+  const handleAddComment = () => {
+    if (!commentInput.trim() || !selectedTicket) return;
+    const newComment = {
+      id: Date.now(),
+      text: commentInput,
+      author: user?.name || "User",
+      time: new Date().toLocaleTimeString()
     };
-  }, []);
+    setMockComments(prev => ({
+      ...prev,
+      [selectedTicket.id]: [...(prev[selectedTicket.id] || []), newComment]
+    }));
+    setCommentInput("");
+  };
 
   return (
-    <section className="surface-card my-tickets-page">
-      <div className="my-tickets-head">
-        <div>
-          <h2>{roleLabel}</h2>
-          <p>View tickets with status, priority, resource, and created date.</p>
+    <div className="dashboard-container">
+      <div className={`dashboard-main ${selectedTicket ? "panel-open" : ""}`}>
+        <div className="dashboard-header">
+          <div>
+            <h2>Ticket Dashboard</h2>
+            <p>Overview and management of all operations.</p>
+          </div>
+          <button className="btn-primary" onClick={() => navigate("/tickets")}>Create Ticket</button>
         </div>
-        <button type="button" onClick={() => navigate("/tickets")}>Create Ticket</button>
+
+        {showSuccess && <div className="alert-success">Ticket created successfully.</div>}
+        {error && <div className="alert-error">{error}</div>}
+
+        {/* KPI SUMMARY CARDS */}
+        <div className="kpi-grid">
+          <div className="kpi-card">
+            <span className="kpi-icon">📋</span>
+            <div className="kpi-info">
+              <h3>{totalTickets}</h3>
+              <p>Total Tickets</p>
+            </div>
+          </div>
+          <div className="kpi-card kpi-open">
+            <span className="kpi-icon">🔵</span>
+            <div className="kpi-info">
+              <h3>{openTickets}</h3>
+              <p>Open</p>
+            </div>
+          </div>
+          <div className="kpi-card kpi-progress">
+            <span className="kpi-icon">🟡</span>
+            <div className="kpi-info">
+              <h3>{inProgressTickets}</h3>
+              <p>In Progress</p>
+            </div>
+          </div>
+          <div className="kpi-card kpi-resolved">
+            <span className="kpi-icon">🟢</span>
+            <div className="kpi-info">
+              <h3>{resolvedTickets}</h3>
+              <p>Resolved</p>
+            </div>
+          </div>
+          <div className="kpi-card kpi-high">
+            <span className="kpi-icon">🔴</span>
+            <div className="kpi-info">
+              <h3>{highPriorityTickets}</h3>
+              <p>High Priority</p>
+            </div>
+          </div>
+        </div>
+
+        {/* STATUS PROGRESS BAR */}
+        {totalTickets > 0 && (
+          <div className="status-overview">
+            <div className="status-bar">
+              <div className="status-segment segment-open" style={{ width: `${(openTickets/totalTickets)*100}%` }}></div>
+              <div className="status-segment segment-progress" style={{ width: `${(inProgressTickets/totalTickets)*100}%` }}></div>
+              <div className="status-segment segment-resolved" style={{ width: `${(resolvedTickets/totalTickets)*100}%` }}></div>
+              <div className="status-segment segment-closed" style={{ width: `${(closedTickets/totalTickets)*100}%` }}></div>
+              <div className="status-segment segment-rejected" style={{ width: `${(rejectedTickets/totalTickets)*100}%` }}></div>
+            </div>
+            <div className="status-labels">
+              <span>🔵 Open: {openTickets}</span>
+              <span>🟡 In Progress: {inProgressTickets}</span>
+              <span>🟢 Resolved: {resolvedTickets}</span>
+              <span>⚫ Closed: {closedTickets}</span>
+              <span>🔴 Rejected: {rejectedTickets}</span>
+            </div>
+          </div>
+        )}
+
+        {/* FILTERS */}
+        <div className="filter-panel">
+          <input type="text" placeholder="Search ID, resource..." value={searchText} onChange={e => setSearchText(e.target.value)} />
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+            <option value="">All Statuses</option>
+            <option value="OPEN">OPEN</option>
+            <option value="IN_PROGRESS">IN_PROGRESS</option>
+            <option value="RESOLVED">RESOLVED</option>
+            <option value="CLOSED">CLOSED</option>
+            <option value="REJECTED">REJECTED</option>
+          </select>
+          <select value={priorityFilter} onChange={e => setPriorityFilter(e.target.value)}>
+            <option value="">All Priorities</option>
+            <option value="LOW">LOW</option>
+            <option value="MEDIUM">MEDIUM</option>
+            <option value="HIGH">HIGH</option>
+          </select>
+          {isAdmin && (
+            <input type="text" placeholder="Assignee email..." value={assignedTechnicianFilter} onChange={e => setAssignedTechnicianFilter(e.target.value)} />
+          )}
+          <button className="btn-secondary" onClick={() => { setSearchText(""); setStatusFilter(""); setPriorityFilter(""); setAssignedTechnicianFilter(""); setDateFrom(""); setDateTo(""); }}>Clear</button>
+        </div>
+
+        {/* TICKET LIST */}
+        <div className="ticket-list-container">
+          {loading ? (
+            <div className="loading-state">Loading tickets...</div>
+          ) : filteredTickets.length === 0 ? (
+            <div className="empty-state">No tickets found.</div>
+          ) : (
+            <table className="ticket-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Resource</th>
+                  <th>Category</th>
+                  <th>Priority</th>
+                  <th>Status</th>
+                  <th>Assignee</th>
+                  <th>Created Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredTickets.map(ticket => (
+                  <tr key={ticket.id} className={selectedTicket?.id === ticket.id ? "selected-row" : ""} onClick={() => handleTicketClick(ticket)}>
+                    <td>#{ticket.id.substring(0, 8)}</td>
+                    <td>{ticket.resourceOrLocation}</td>
+                    <td>{ticket.category}</td>
+                    <td><span className={`badge priority-${ticket.priority}`}>{ticket.priority}</span></td>
+                    <td><span className={`badge status-${ticket.status}`}>{ticket.status}</span></td>
+                    <td>{ticket.assignedTechnicianEmail || "Unassigned"}</td>
+                    <td>{new Date(ticket.createdAt).toLocaleDateString()}</td>
+                    <td>
+                      <button className="btn-small" onClick={(e) => { e.stopPropagation(); handleTicketClick(ticket); }}>View</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
       </div>
 
-      {showSuccess ? <p className="my-ticket-success">Ticket created successfully.</p> : null}
-      {error ? <p className="my-ticket-error">{error}</p> : null}
-
-      <section className="ticket-filter-panel">
-        <div className="ticket-filter-grid">
-          <label>
-            Search tickets
-            <input
-              type="text"
-              value={searchText}
-              onChange={(event) => setSearchText(event.target.value)}
-              placeholder="Ticket ID, resource, category, keywords"
-            />
-          </label>
-
-          <label>
-            Status
-            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-              <option value="">All statuses</option>
-              <option value="OPEN">OPEN</option>
-              <option value="IN_PROGRESS">IN_PROGRESS</option>
-              <option value="RESOLVED">RESOLVED</option>
-              <option value="CLOSED">CLOSED</option>
-              <option value="REJECTED">REJECTED</option>
-            </select>
-          </label>
-
-          <label>
-            Priority
-            <select value={priorityFilter} onChange={(event) => setPriorityFilter(event.target.value)}>
-              <option value="">All priorities</option>
-              <option value="LOW">LOW</option>
-              <option value="MEDIUM">MEDIUM</option>
-              <option value="HIGH">HIGH</option>
-            </select>
-          </label>
-
-          <label>
-            Assigned technician
-            <input
-              type="text"
-              value={assignedTechnicianFilter}
-              onChange={(event) => setAssignedTechnicianFilter(event.target.value)}
-              placeholder="Technician email or name"
-            />
-          </label>
-
-          <label>
-            Date from
-            <input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} />
-          </label>
-
-          <label>
-            Date to
-            <input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
-          </label>
-        </div>
-
-        <div className="ticket-filter-actions">
-          <button type="button" className="btn-secondary" onClick={clearFilters}>
-            Clear Filters
-          </button>
-          <span className="ticket-filter-count">
-            Showing {filteredTickets.length} of {tickets.length} tickets
-          </span>
-        </div>
-      </section>
-
-      {loading ? (
-        <div className="my-ticket-loading">Loading tickets...</div>
-      ) : tickets.length === 0 ? (
-        <div className="my-ticket-empty">No tickets found yet.</div>
-      ) : filteredTickets.length === 0 ? (
-        <div className="my-ticket-empty">No tickets match the current search and filters.</div>
-      ) : (
-        <div className="my-ticket-list">
-          {filteredTickets.map((ticket) => (
-            <article className="my-ticket-card" key={ticket.id}>
-              <div className="my-ticket-row">
-                <h3>{ticket.resourceOrLocation}</h3>
-                <div className="my-ticket-actions-inline">
-                  <span className={`status-chip status-${ticket.status}`}>{ticket.status}</span>
-                  <button
-                    type="button"
-                    className="open-ticket-btn"
-                    onClick={() => setOpenTicketId((current) => (current === ticket.id ? "" : ticket.id))}
-                  >
-                    {openTicketId === ticket.id ? "Close" : "Open"}
-                  </button>
-                </div>
+      {/* SIDE PANEL */}
+      {selectedTicket && (
+        <div className="side-panel">
+          <div className="panel-header">
+            <h3>Ticket #{selectedTicket.id.substring(0, 8)}</h3>
+            <button className="close-btn" onClick={() => setSelectedTicket(null)}>✕</button>
+          </div>
+          
+          <div className="panel-content">
+            <div className="panel-section">
+              <div className="tags">
+                <span className={`badge priority-${selectedTicket.priority}`}>{selectedTicket.priority} Priority</span>
+                <span className={`badge status-${selectedTicket.status}`}>{selectedTicket.status}</span>
               </div>
-              <div className="my-ticket-meta">
-                <span className="ticket-id-chip">#{ticket.id}</span>
-                <span>{ticket.category}</span>
-                <span className={`priority-pill priority-${ticket.priority}`}>{ticket.priority}</span>
-                <span>{new Date(ticket.createdAt).toLocaleString()}</span>
-                <span>{ticket.resourceOrLocation}</span>
-                <span>{ticket.assignedTechnicianEmail || "UNASSIGNED"}</span>
-              </div>
-              {openTicketId === ticket.id ? (
-                <div className="my-ticket-detail">
-                  <div className="detail-grid">
-                    <div>
-                      <strong>Ticket ID</strong>
-                      <span>#{ticket.id}</span>
-                    </div>
-                    <div>
-                      <strong>Category</strong>
-                      <span>{ticket.category || "N/A"}</span>
-                    </div>
-                    <div>
-                      <strong>Priority</strong>
-                      <span>{ticket.priority || "N/A"}</span>
-                    </div>
-                    <div>
-                      <strong>Status</strong>
-                      <span>{ticket.status || "N/A"}</span>
-                    </div>
-                    <div>
-                      <strong>Resource / Location</strong>
-                      <span>{ticket.resourceOrLocation || "N/A"}</span>
-                    </div>
-                    <div>
-                      <strong>Assigned Technician</strong>
-                      <span>{ticket.assignedTechnicianEmail || "Unassigned"}</span>
-                    </div>
+              <h4 className="detail-title">{selectedTicket.resourceOrLocation}</h4>
+              <p className="detail-category">{selectedTicket.category}</p>
+              <p className="detail-desc">{selectedTicket.description}</p>
+            </div>
+
+            <div className="panel-section">
+              <h4>Contact Info</h4>
+              <p>{selectedTicket.contactName} ({selectedTicket.contactEmail})</p>
+              <p>{selectedTicket.contactPhone}</p>
+            </div>
+
+            {/* ROLE BASED CONTROLS */}
+            <div className="panel-section controls-section">
+              <h4>Management</h4>
+              
+              <div className="control-group">
+                <label>Assigned Technician</label>
+                {isAdmin ? (
+                  <div className="input-row">
+                    <input type="email" value={technicianEmailInput} onChange={e => setTechnicianEmailInput(e.target.value)} placeholder="Email..." />
+                    <button className="btn-secondary btn-small" onClick={handleAssign}>Assign</button>
                   </div>
-                  <p><strong>Description:</strong> {ticket.description || "No description provided."}</p>
-                  <p><strong>Contact:</strong> {ticket.contactName || "N/A"} | {ticket.contactEmail || "N/A"} | {ticket.contactPhone || "N/A"}</p>
-                  <p><strong>Created By:</strong> {ticket.createdByEmail || "N/A"}</p>
-                  <p><strong>Resolution Notes:</strong> {ticket.resolutionNotes || "Not available yet."}</p>
+                ) : (
+                  <p>{selectedTicket.assignedTechnicianEmail || "Unassigned"}</p>
+                )}
+              </div>
+
+              <div className="control-group">
+                <label>Status</label>
+                {isAdmin ? (
+                  <div className="input-row">
+                    <select value={statusInput} onChange={e => setStatusInput(e.target.value)}>
+                      <option value="OPEN">OPEN</option>
+                      <option value="IN_PROGRESS">IN_PROGRESS</option>
+                      <option value="RESOLVED">RESOLVED</option>
+                      <option value="CLOSED">CLOSED</option>
+                      <option value="REJECTED">REJECTED</option>
+                    </select>
+                    <button className="btn-secondary btn-small" onClick={() => handleStatusChange(statusInput)}>Update</button>
+                  </div>
+                ) : isTechnician ? (
+                  <div className="technician-actions">
+                    {selectedTicket.status === "OPEN" && (
+                      <button className="btn-primary" onClick={() => handleStatusChange("IN_PROGRESS")}>Start Work</button>
+                    )}
+                    {selectedTicket.status === "IN_PROGRESS" && (
+                      <button className="btn-success" onClick={() => handleStatusChange("RESOLVED")}>Mark as Resolved</button>
+                    )}
+                    {selectedTicket.status !== "OPEN" && selectedTicket.status !== "IN_PROGRESS" && (
+                      <p>No further actions available.</p>
+                    )}
+                  </div>
+                ) : (
+                  <p>Contact admin to change status.</p>
+                )}
+              </div>
+            </div>
+
+            {/* COMMENTS SECTION */}
+            <div className="panel-section comments-section">
+              <h4>Activity & Comments</h4>
+              <div className="comments-list">
+                <div className="comment system-comment">
+                  <strong>System:</strong> Ticket created by {selectedTicket.createdByEmail}.
                 </div>
-              ) : null}
-            </article>
-          ))}
+                {(mockComments[selectedTicket.id] || []).map(c => (
+                  <div key={c.id} className="comment user-comment">
+                    <strong>{c.author}</strong> <span className="time">{c.time}</span>
+                    <p>{c.text}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="add-comment">
+                <input type="text" value={commentInput} onChange={e => setCommentInput(e.target.value)} placeholder="Add a comment..." onKeyDown={e => e.key === 'Enter' && handleAddComment()} />
+                <button className="btn-secondary" onClick={handleAddComment}>Post</button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
-    </section>
+    </div>
   );
 }
 
