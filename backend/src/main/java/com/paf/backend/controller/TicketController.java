@@ -8,7 +8,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -98,5 +101,29 @@ public class TicketController {
 					savedTicket.getResolutionNotes(),
 				savedTicket.getImages().size(),
 				savedTicket.getCreatedAt());
+	}
+
+	@PatchMapping("/{id}/status")
+	@PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
+	public TicketResponse updateTicketStatus(
+			@PathVariable String id,
+			@Valid @RequestBody UpdateTicketStatusRequest request,
+			Authentication authentication) {
+		Ticket updatedTicket = ticketService.updateTicketStatus(id, request.status(), authentication);
+		return new TicketResponse(
+				updatedTicket.getId(),
+				updatedTicket.getResourceOrLocation(),
+				updatedTicket.getCategory(),
+				updatedTicket.getPriority(),
+				updatedTicket.getDescription(),
+				updatedTicket.getContactName(),
+				updatedTicket.getContactEmail(),
+				updatedTicket.getContactPhone(),
+				updatedTicket.getStatus(),
+				updatedTicket.getCreatedByEmail(),
+				updatedTicket.getAssignedTechnicianEmail(),
+				updatedTicket.getResolutionNotes(),
+				updatedTicket.getImages().size(),
+				updatedTicket.getCreatedAt());
 	}
 }

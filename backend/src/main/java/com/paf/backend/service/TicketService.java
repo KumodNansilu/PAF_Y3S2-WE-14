@@ -11,6 +11,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.security.access.AccessDeniedException;
 
 import com.paf.backend.controller.CreateTicketRequest;
 import com.paf.backend.model.Ticket;
@@ -90,6 +91,32 @@ public class TicketService {
 		}
 
 		return ticketRepository.findByCreatedByEmailOrderByCreatedAtDesc(authentication.getName());
+	}
+
+	public Ticket updateTicketStatus(String ticketId, TicketStatus newStatus, Authentication authentication) {
+		Ticket ticket = ticketRepository.findById(ticketId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket not found"));
+
+		List<String> authorities = authentication.getAuthorities().stream()
+				.map(grantedAuthority -> grantedAuthority.getAuthority())
+				.toList();
+
+		if (authorities.contains("ROLE_ADMIN")) {
+			ticket.setStatus(newStatus);
+		} else if (authorities.contains("ROLE_TECHNICIAN")) {
+			if (ticket.getAssignedTechnicianEmail() == null || !ticket.getAssignedTechnicianEmail().equals(authentication.getName())) {
+				throw new AccessDeniedException("Technicians can only update tickets assigned to them");
+			}
+			if (newStatus != TicketStatus.IN_PROGRESS && newStatus != TicketStatus.RESOLVED) {
+				throw new AccessDeniedException("Technicians can only update status to IN_PROGRESS or RESOLVED");
+			}
+			ticket.setStatus(newStatus);
+		} else {
+			throw new AccessDeniedException("You do not have permission to update ticket status");
+		}
+
+		ticket.setUpdatedAt(Instant.now());
+		return ticketRepository.save(ticket);
 	}
 
 	private String encodeBase64(MultipartFile file) {
