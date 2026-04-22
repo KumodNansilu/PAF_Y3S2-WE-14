@@ -150,4 +150,28 @@ public class TicketController {
 				updatedTicket.getImages().size(),
 				updatedTicket.getCreatedAt());
 	}
+
+	@PatchMapping("/{id}/resolve")
+	@PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
+	public TicketResponse resolveTicket(
+			@PathVariable String id,
+			@Valid @RequestBody ResolveTicketRequest request,
+			Authentication authentication) {
+		Ticket updatedTicket = ticketService.resolveTicket(id, request.resolutionNotes(), authentication);
+		return new TicketResponse(
+				updatedTicket.getId(),
+				updatedTicket.getResourceOrLocation(),
+				updatedTicket.getCategory(),
+				updatedTicket.getPriority(),
+				updatedTicket.getDescription(),
+				updatedTicket.getContactName(),
+				updatedTicket.getContactEmail(),
+				updatedTicket.getContactPhone(),
+				updatedTicket.getStatus(),
+				updatedTicket.getCreatedByEmail(),
+				updatedTicket.getAssignedTechnicianEmail(),
+				updatedTicket.getResolutionNotes(),
+				updatedTicket.getImages().size(),
+				updatedTicket.getCreatedAt());
+	}
 }

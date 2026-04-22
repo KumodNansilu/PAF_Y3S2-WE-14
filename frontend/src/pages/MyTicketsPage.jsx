@@ -1,7 +1,7 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { getTicketsForRole, updateTicketStatus, assignTechnician } from "../services/api";
+import { getTicketsForRole, updateTicketStatus, assignTechnician, resolveTicket } from "../services/api";
 import "../styles/MyTicketsPage.css";
 
 function MyTicketsPage() {
@@ -25,6 +25,7 @@ function MyTicketsPage() {
 
   const [technicianEmailInput, setTechnicianEmailInput] = React.useState("");
   const [statusInput, setStatusInput] = React.useState("");
+  const [resolutionNotesInput, setResolutionNotesInput] = React.useState("");
   
   // For simulating comments
   const [commentInput, setCommentInput] = React.useState("");
@@ -88,6 +89,7 @@ function MyTicketsPage() {
     setSelectedTicket(ticket);
     setStatusInput(ticket.status);
     setTechnicianEmailInput(ticket.assignedTechnicianEmail || "");
+    setResolutionNotesInput(ticket.resolutionNotes || "");
   };
 
   const handleAssign = async () => {
@@ -110,6 +112,18 @@ function MyTicketsPage() {
       setStatusInput(newStatus);
     } catch (err) {
       alert("Failed to update status: " + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleResolve = async () => {
+    if (!selectedTicket || !resolutionNotesInput.trim()) return;
+    try {
+      await resolveTicket(selectedTicket.id, resolutionNotesInput);
+      await loadTickets();
+      setSelectedTicket({ ...selectedTicket, status: "RESOLVED", resolutionNotes: resolutionNotesInput });
+      setStatusInput("RESOLVED");
+    } catch (err) {
+      alert("Failed to resolve ticket: " + (err.response?.data?.message || err.message));
     }
   };
 
@@ -320,15 +334,29 @@ function MyTicketsPage() {
                     <button className="btn-secondary btn-small" onClick={() => handleStatusChange(statusInput)}>Update</button>
                   </div>
                 ) : isTechnician ? (
-                  <div className="technician-actions">
+                  <div className="technician-actions" style={{ flexDirection: "column" }}>
                     {selectedTicket.status === "OPEN" && (
                       <button className="btn-primary" onClick={() => handleStatusChange("IN_PROGRESS")}>Start Work</button>
                     )}
                     {selectedTicket.status === "IN_PROGRESS" && (
-                      <button className="btn-success" onClick={() => handleStatusChange("RESOLVED")}>Mark as Resolved</button>
+                      <div className="resolve-container" style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                        <textarea 
+                          placeholder="Describe how the issue was fixed..."
+                          value={resolutionNotesInput}
+                          onChange={e => setResolutionNotesInput(e.target.value)}
+                          style={{ padding: "8px", borderRadius: "4px", border: "1px solid #d9d9e3", minHeight: "60px", fontFamily: "inherit" }}
+                        />
+                        <button 
+                          className="btn-success" 
+                          onClick={handleResolve}
+                          disabled={!resolutionNotesInput.trim()}
+                        >
+                          Mark as Resolved
+                        </button>
+                      </div>
                     )}
                     {selectedTicket.status !== "OPEN" && selectedTicket.status !== "IN_PROGRESS" && (
-                      <p>No further actions available.</p>
+                      <p>No further actions available. Notes: {selectedTicket.resolutionNotes}</p>
                     )}
                   </div>
                 ) : (

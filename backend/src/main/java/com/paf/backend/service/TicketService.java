@@ -144,6 +144,28 @@ public class TicketService {
 		return ticketRepository.save(ticket);
 	}
 
+	public Ticket resolveTicket(String ticketId, String resolutionNotes, Authentication authentication) {
+		Ticket ticket = ticketRepository.findById(ticketId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket not found"));
+
+		List<String> authorities = authentication.getAuthorities().stream()
+				.map(grantedAuthority -> grantedAuthority.getAuthority())
+				.toList();
+
+		if (authorities.contains("ROLE_TECHNICIAN")) {
+			if (ticket.getAssignedTechnicianEmail() == null || !ticket.getAssignedTechnicianEmail().equals(authentication.getName())) {
+				throw new AccessDeniedException("You can only resolve tickets assigned to you");
+			}
+		} else if (!authorities.contains("ROLE_ADMIN")) {
+			throw new AccessDeniedException("Only admins and assigned technicians can resolve tickets");
+		}
+
+		ticket.setResolutionNotes(resolutionNotes);
+		ticket.setStatus(TicketStatus.RESOLVED);
+		ticket.setUpdatedAt(Instant.now());
+		return ticketRepository.save(ticket);
+	}
+
 	private String encodeBase64(MultipartFile file) {
 		try {
 			return Base64.getEncoder().encodeToString(file.getBytes());
