@@ -8,6 +8,7 @@ import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import Dashboard from "./pages/Dashboard";
 import TicketCreatePage from "./pages/TicketCreatePage";
 import MyTicketsPage from "./pages/MyTicketsPage";
+import AnalyticsDashboard from "./pages/AnalyticsDashboard";
 import UnauthorizedPage from "./pages/UnauthorizedPage";
 import "./styles/AppShell.css";
 
@@ -40,6 +41,7 @@ function AppShell() {
           <Route path="/tickets" element={<TicketCreatePage />} />
           <Route path="/tickets/list" element={<MyTicketsPage />} />
           <Route path="/tickets/my" element={<MyTicketsPage />} />
+          <Route path="/analytics" element={<AnalyticsDashboard />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/search" element={<SearchResultsPage />} />
           <Route
