@@ -11,6 +11,7 @@ import MyTicketsPage from "./pages/MyTicketsPage";
 import AnalyticsDashboard from "./pages/AnalyticsDashboard";
 import ResourcesPage from "./pages/ResourcesPage";
 import UnauthorizedPage from "./pages/UnauthorizedPage";
+import ProfilePage from "./pages/ProfilePage";
 import "./styles/AppShell.css";
 
 function App() {
@@ -293,17 +294,7 @@ function SimplePage({ title }) {
   );
 }
 
-function ProfilePage() {
-  const { user } = useAuth();
-  return (
-    <section className="surface-card">
-      <h2>My Profile</h2>
-      <p>Name: {user?.name || "N/A"}</p>
-      <p>Email: {user?.email || "N/A"}</p>
-      <p>Roles: {(user?.roles || []).join(", ") || "ROLE_USER"}</p>
-    </section>
-  );
-}
+
 
 function SearchResultsPage() {
   const [params] = useSearchParams();
