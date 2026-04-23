@@ -10,6 +10,7 @@ import TicketCreatePage from "./pages/TicketCreatePage";
 import MyTicketsPage from "./pages/MyTicketsPage";
 import AnalyticsDashboard from "./pages/AnalyticsDashboard";
 import ResourcesPage from "./pages/ResourcesPage";
+import AvailableResourcesPage from "./pages/AvailableResourcesPage";
 import UnauthorizedPage from "./pages/UnauthorizedPage";
 import ProfilePage from "./pages/ProfilePage";
 import "./styles/AppShell.css";
@@ -38,7 +39,15 @@ function AppShell() {
           }
         >
           <Route path="/" element={<Dashboard />} />
-          <Route path="/resources" element={<ResourcesPage />} />
+          <Route path="/available-resources" element={<AvailableResourcesPage />} />
+          <Route
+            path="/resources"
+            element={
+              <ProtectedRoute roles={["ADMIN"]}>
+                <ResourcesPage />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/bookings" element={<SimplePage title="Booking Management" />} />
           <Route path="/tickets" element={<TicketCreatePage />} />
           <Route path="/tickets/list" element={<MyTicketsPage />} />
@@ -257,6 +266,7 @@ function ProtectedLayout() {
             <NavLink to="/" end>
               Dashboard
             </NavLink>
+            <NavLink to="/available-resources">Available Resources</NavLink>
             <NavLink to="/resources">Resource Management</NavLink>
             <NavLink to="/bookings">Booking Management</NavLink>
             <NavLink to="/tickets/list">Ticket Management</NavLink>
