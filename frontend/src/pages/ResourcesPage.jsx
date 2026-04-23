@@ -9,7 +9,8 @@ import {
 } from "../services/api";
 import "../styles/ResourcesPage.css";
 
-const TYPE_OPTIONS = ["LECTURE_HALL", "LAB", "MEETING_ROOM", "EQUIPMENT"];
+const FACILITY_TYPE_OPTIONS = ["LECTURE_HALL", "LAB", "MEETING_ROOM"];
+const ASSET_TYPE = "EQUIPMENT";
 const STATUS_OPTIONS = ["ACTIVE", "OUT_OF_SERVICE"];
 const DAY_OPTIONS = [
   "MONDAY",
@@ -28,6 +29,11 @@ const initialForm = {
   location: "",
   status: "ACTIVE",
   availabilityWindows: [{ dayOfWeek: "MONDAY", startTime: "08:00", endTime: "17:00" }]
+};
+
+const initialAssetForm = {
+  ...initialForm,
+  type: ASSET_TYPE
 };
 
 function blankFilters() {
@@ -51,6 +57,7 @@ function ResourcesPage() {
   const [error, setError] = React.useState("");
 
   const [form, setForm] = React.useState(initialForm);
+  const [createMode, setCreateMode] = React.useState("FACILITY");
   const [editingId, setEditingId] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
   const [submitError, setSubmitError] = React.useState("");
@@ -74,11 +81,21 @@ function ResourcesPage() {
 
   const counts = React.useMemo(() => {
     const active = resources.filter((item) => item.status === "ACTIVE").length;
+    const assets = resources.filter((item) => item.type === ASSET_TYPE).length;
+    const facilities = resources.length - assets;
     return {
       total: resources.length,
       active,
-      outOfService: resources.length - active
+      outOfService: resources.length - active,
+      facilities,
+      assets
     };
+  }, [resources]);
+
+  const groupedResources = React.useMemo(() => {
+    const facilityItems = resources.filter((item) => item.type !== ASSET_TYPE);
+    const assetItems = resources.filter((item) => item.type === ASSET_TYPE);
+    return { facilityItems, assetItems };
   }, [resources]);
 
   const onFilterChange = (event) => {
@@ -89,6 +106,13 @@ function ResourcesPage() {
   const onFormChange = (event) => {
     const { name, value } = event.target;
     setForm((current) => ({ ...current, [name]: name === "capacity" ? Number(value) || "" : value }));
+  };
+
+  const onModeChange = (mode) => {
+    setCreateMode(mode);
+    setEditingId("");
+    setSubmitError("");
+    setForm(mode === "ASSET" ? initialAssetForm : initialForm);
   };
 
   const onWindowChange = (index, field, value) => {
@@ -123,13 +147,14 @@ function ResourcesPage() {
   };
 
   const resetForm = () => {
-    setForm(initialForm);
+    setForm(createMode === "ASSET" ? initialAssetForm : initialForm);
     setEditingId("");
     setSubmitError("");
   };
 
   const startEdit = (resource) => {
     setEditingId(resource.id);
+    setCreateMode(resource.type === ASSET_TYPE ? "ASSET" : "FACILITY");
     setSubmitError("");
     setForm({
       name: resource.name,
@@ -153,6 +178,7 @@ function ResourcesPage() {
 
       const payload = {
         ...form,
+        type: createMode === "ASSET" ? ASSET_TYPE : form.type,
         capacity: Number(form.capacity)
       };
 
@@ -211,6 +237,14 @@ function ResourcesPage() {
             <span>Total</span>
           </div>
           <div>
+            <strong>{counts.facilities}</strong>
+            <span>Facilities</span>
+          </div>
+          <div>
+            <strong>{counts.assets}</strong>
+            <span>Assets</span>
+          </div>
+          <div>
             <strong>{counts.active}</strong>
             <span>Active</span>
           </div>
@@ -230,7 +264,7 @@ function ResourcesPage() {
         />
         <select name="type" value={filters.type} onChange={onFilterChange}>
           <option value="">All Types</option>
-          {TYPE_OPTIONS.map((type) => (
+          {[...FACILITY_TYPE_OPTIONS, ASSET_TYPE].map((type) => (
             <option key={type} value={type}>
               {type}
             </option>
@@ -280,23 +314,54 @@ function ResourcesPage() {
             ) : null}
           </div>
 
+          <div className="create-mode-switch" role="tablist" aria-label="Resource type selector">
+            <button
+              type="button"
+              role="tab"
+              className={`mode-btn ${createMode === "FACILITY" ? "active" : ""}`}
+              aria-selected={createMode === "FACILITY"}
+              onClick={() => onModeChange("FACILITY")}
+              disabled={submitting}
+            >
+              Facilities
+            </button>
+            <button
+              type="button"
+              role="tab"
+              className={`mode-btn ${createMode === "ASSET" ? "active" : ""}`}
+              aria-selected={createMode === "ASSET"}
+              onClick={() => onModeChange("ASSET")}
+              disabled={submitting}
+            >
+              Assets
+            </button>
+          </div>
+
+          {createMode === "ASSET" ? (
+            <p className="mode-helper">Create equipment assets with clear item quantities for users.</p>
+          ) : (
+            <p className="mode-helper">Create facilities such as lecture halls, labs, and meeting rooms.</p>
+          )}
+
           <div className="resource-form-grid">
             <label>
-              Resource name
+              {createMode === "ASSET" ? "Asset name" : "Facility name"}
               <input name="name" value={form.name} onChange={onFormChange} required />
             </label>
+            {createMode === "FACILITY" ? (
+              <label>
+                Facility type
+                <select name="type" value={form.type} onChange={onFormChange} required>
+                  {FACILITY_TYPE_OPTIONS.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
             <label>
-              Type
-              <select name="type" value={form.type} onChange={onFormChange} required>
-                {TYPE_OPTIONS.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Capacity
+              {createMode === "ASSET" ? "Items available" : "Capacity"}
               <input
                 name="capacity"
                 value={form.capacity}
@@ -307,7 +372,7 @@ function ResourcesPage() {
               />
             </label>
             <label>
-              Location
+              {createMode === "ASSET" ? "Storage location" : "Location"}
               <input name="location" value={form.location} onChange={onFormChange} required />
             </label>
             <label>
@@ -362,7 +427,15 @@ function ResourcesPage() {
           {submitError ? <p className="error-text">{submitError}</p> : null}
 
           <button type="submit" className="primary-btn" disabled={submitting}>
-            {submitting ? "Saving..." : editingId ? "Update Resource" : "Create Resource"}
+            {submitting
+              ? "Saving..."
+              : editingId
+                ? createMode === "ASSET"
+                  ? "Update Asset"
+                  : "Update Facility"
+                : createMode === "ASSET"
+                  ? "Create Asset"
+                  : "Create Facility"}
           </button>
         </form>
       ) : null}
@@ -375,40 +448,94 @@ function ResourcesPage() {
         {!loading && !error && resources.length === 0 ? <p>No resources found for current filters.</p> : null}
 
         {!loading && !error && resources.length > 0 ? (
-          <div className="resource-table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Type</th>
-                  <th>Capacity</th>
-                  <th>Location</th>
-                  <th>Status</th>
-                  <th>Availability Windows</th>
-                  {isAdmin ? <th>Actions</th> : null}
-                </tr>
-              </thead>
-              <tbody>
-                {resources.map((resource) => (
-                  <tr key={resource.id}>
-                    <td>{resource.name}</td>
-                    <td>{resource.type}</td>
-                    <td>{resource.capacity}</td>
-                    <td>{resource.location}</td>
-                    <td>
-                      <span className={`status-chip status-${resource.status}`}>{resource.status}</span>
-                    </td>
-                    <td>
+          <>
+            <div className="resource-table-wrap">
+              <h4>Facilities</h4>
+              {groupedResources.facilityItems.length === 0 ? (
+                <p>No facilities available.</p>
+              ) : (
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Type</th>
+                      <th>Capacity</th>
+                      <th>Location</th>
+                      <th>Status</th>
+                      <th>Availability Windows</th>
+                      {isAdmin ? <th>Actions</th> : null}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {groupedResources.facilityItems.map((resource) => (
+                      <tr key={resource.id}>
+                        <td>{resource.name}</td>
+                        <td>{resource.type}</td>
+                        <td>{resource.capacity}</td>
+                        <td>{resource.location}</td>
+                        <td>
+                          <span className={`status-chip status-${resource.status}`}>{resource.status}</span>
+                        </td>
+                        <td>
+                          <ul className="window-list">
+                            {(resource.availabilityWindows || []).map((window, index) => (
+                              <li key={`${resource.id}-window-${index}`}>
+                                {window.dayOfWeek}: {window.startTime} - {window.endTime}
+                              </li>
+                            ))}
+                          </ul>
+                        </td>
+                        {isAdmin ? (
+                          <td>
+                            <div className="action-row">
+                              <button type="button" className="ghost-btn" onClick={() => startEdit(resource)}>
+                                Edit
+                              </button>
+                              <button type="button" className="ghost-btn" onClick={() => onStatusToggle(resource)}>
+                                Toggle Status
+                              </button>
+                              <button type="button" className="danger-btn" onClick={() => onDelete(resource)}>
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        ) : null}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            <div className="asset-panel">
+              <div className="asset-panel-head">
+                <h4>Assets</h4>
+                <p>Equipment availability at a glance</p>
+              </div>
+
+              {groupedResources.assetItems.length === 0 ? (
+                <p>No assets available.</p>
+              ) : (
+                <div className="asset-grid">
+                  {groupedResources.assetItems.map((resource) => (
+                    <article key={resource.id} className="asset-card">
+                      <div className="asset-card-top">
+                        <h5>{resource.name}</h5>
+                        <span className={`status-chip status-${resource.status}`}>{resource.status}</span>
+                      </div>
+                      <p className="asset-location">{resource.location}</p>
+                      <p className="asset-qty">
+                        <strong>{resource.capacity}</strong> items available
+                      </p>
                       <ul className="window-list">
                         {(resource.availabilityWindows || []).map((window, index) => (
-                          <li key={`${resource.id}-window-${index}`}>
+                          <li key={`${resource.id}-asset-window-${index}`}>
                             {window.dayOfWeek}: {window.startTime} - {window.endTime}
                           </li>
                         ))}
                       </ul>
-                    </td>
-                    {isAdmin ? (
-                      <td>
+
+                      {isAdmin ? (
                         <div className="action-row">
                           <button type="button" className="ghost-btn" onClick={() => startEdit(resource)}>
                             Edit
@@ -420,13 +547,13 @@ function ResourcesPage() {
                             Delete
                           </button>
                         </div>
-                      </td>
-                    ) : null}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      ) : null}
+                    </article>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
         ) : null}
       </div>
     </section>
