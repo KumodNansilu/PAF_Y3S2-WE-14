@@ -378,7 +378,14 @@ function ResourcesPage() {
       <div className="surface-card resources-head">
         <div className="head-copy">
           <span className="section-eyebrow">Operations</span>
-          <h2>Resource Management</h2>
+          <div className="head-title-row">
+            <span className="head-title-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="img" focusable="false">
+                <path d="M3 6.75A2.75 2.75 0 0 1 5.75 4h12.5A2.75 2.75 0 0 1 21 6.75v10.5A2.75 2.75 0 0 1 18.25 20H5.75A2.75 2.75 0 0 1 3 17.25V6.75Zm2.75-1.25c-.69 0-1.25.56-1.25 1.25v10.5c0 .69.56 1.25 1.25 1.25h12.5c.69 0 1.25-.56 1.25-1.25V6.75c0-.69-.56-1.25-1.25-1.25H5.75Zm1.5 3a.75.75 0 0 1 .75-.75h8a.75.75 0 0 1 0 1.5h-8a.75.75 0 0 1-.75-.75Zm0 3.5a.75.75 0 0 1 .75-.75h5.5a.75.75 0 0 1 0 1.5H8a.75.75 0 0 1-.75-.75Zm0 3.5a.75.75 0 0 1 .75-.75h3.5a.75.75 0 0 1 0 1.5H8a.75.75 0 0 1-.75-.75Z" />
+              </svg>
+            </span>
+            <h1>Resource Management</h1>
+          </div>
           <p>Manage facilities, assets, and availability across the campus from one unified hub.</p>
         </div>
       </div>

@@ -9,8 +9,10 @@
 
 .resources-head h2 {
   margin: 0;
-  font-size: clamp(1.9rem, 2.4vw, 2.5rem);
+  font-size: clamp(3.2rem, 5vw, 5.2rem);
+  line-height: 1.05;
   letter-spacing: -0.02em;
+  font-weight: 800;
 }
 
 .resources-head p {
@@ -21,6 +23,32 @@
 
 .head-copy {
   max-width: 720px;
+}
+
+.head-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.95rem;
+}
+
+.head-title-icon {
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(145deg, #e3f3ed 0%, #f0f9f5 100%);
+  border: 1px solid #bfdfd5;
+  color: #1e6a58;
+  box-shadow: 0 4px 10px rgba(33, 95, 82, 0.12);
+  flex-shrink: 0;
+}
+
+.head-title-icon svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  fill: currentColor;
 }
 
 .section-eyebrow {
@@ -582,6 +610,15 @@
 }
 
 @media (max-width: 720px) {
+  .resources-head h2 {
+    font-size: clamp(2.6rem, 9vw, 3.4rem);
+  }
+
+  .head-title-icon {
+    width: 2.35rem;
+    height: 2.35rem;
+  }
+
   .resource-kpis-modern {
     grid-template-columns: 1fr;
   }
