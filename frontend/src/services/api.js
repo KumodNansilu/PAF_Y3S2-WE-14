@@ -111,6 +111,40 @@ export async function getAnalytics() {
   return response.data;
 }
 
+export async function getResources(filters = {}) {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && `${value}`.trim() !== "") {
+      params.append(key, value);
+    }
+  });
+
+  const query = params.toString();
+  const response = await api.get(`/api/resources${query ? `?${query}` : ""}`);
+  return response.data;
+}
+
+export async function createResource(payload) {
+  const response = await api.post("/api/resources", payload);
+  return response.data;
+}
+
+export async function updateResource(id, payload) {
+  const response = await api.put(`/api/resources/${id}`, payload);
+  return response.data;
+}
+
+export async function updateResourceStatus(id, status) {
+  const response = await api.patch(`/api/resources/${id}/status`, { status });
+  return response.data;
+}
+
+export async function deleteResource(id) {
+  const response = await api.delete(`/api/resources/${id}`);
+  return response.data;
+}
+
 export function getGoogleLoginUrl() {
   return `${api.defaults.baseURL}/oauth2/authorization/google`;
 }
