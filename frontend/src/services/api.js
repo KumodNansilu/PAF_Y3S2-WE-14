@@ -2,8 +2,13 @@ import axios from "axios";
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL || "http://localhost:8080",
-  withCredentials: true
+  withCredentials: true,
+  headers: {
+    "Content-Type": "application/json"
+  }
 });
+
+/* ================= AUTH ================= */
 
 export async function getCurrentUser() {
   const response = await api.get("/api/auth/me");
@@ -12,16 +17,6 @@ export async function getCurrentUser() {
 
 export async function logout() {
   await api.post("/api/auth/logout");
-}
-
-export async function getAdminPing() {
-  const response = await api.get("/api/admin/ping");
-  return response.data;
-}
-
-export async function getUserPing() {
-  const response = await api.get("/api/user/ping");
-  return response.data;
 }
 
 export async function registerUser(payload) {
@@ -34,8 +29,23 @@ export async function loginWithEmail(payload) {
   return response.data;
 }
 
+/* ================= TEST ================= */
+
+export async function getAdminPing() {
+  const response = await api.get("/api/admin/ping");
+  return response.data;
+}
+
+export async function getUserPing() {
+  const response = await api.get("/api/user/ping");
+  return response.data;
+}
+
+/* ================= TICKETS ================= */
+
 export async function createTicket(payload, images = []) {
   const formData = new FormData();
+
   formData.append(
     "payload",
     new Blob([JSON.stringify(payload)], {
@@ -47,7 +57,12 @@ export async function createTicket(payload, images = []) {
     formData.append("images", image);
   });
 
-  const response = await api.post("/api/tickets", formData);
+  const response = await api.post("/api/tickets", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data"
+    }
+  });
+
   return response.data;
 }
 
@@ -106,10 +121,14 @@ export async function updateTicketDetails(id, details) {
   return response.data;
 }
 
+/* ================= ANALYTICS ================= */
+
 export async function getAnalytics() {
-  const response = await api.get('/api/analytics');
+  const response = await api.get("/api/analytics");
   return response.data;
 }
+
+/* ================= GOOGLE LOGIN ================= */
 
 export function getGoogleLoginUrl() {
   return `${api.defaults.baseURL}/oauth2/authorization/google`;

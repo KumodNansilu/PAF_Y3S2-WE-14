@@ -1,14 +1,16 @@
 import React from "react";
-import { Navigate, NavLink, Outlet, Route, Routes, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, Navigate, NavLink, Outlet, Route, Routes, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import LoginPage from "./pages/LoginPage";
 import RegistrationPage from "./pages/RegistrationPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import Dashboard from "./pages/Dashboard";
+
 import TicketCreatePage from "./pages/TicketCreatePage";
 import MyTicketsPage from "./pages/MyTicketsPage";
 import AnalyticsDashboard from "./pages/AnalyticsDashboard";
+import AdminPage from "./pages/AdminPage";
 import UnauthorizedPage from "./pages/UnauthorizedPage";
 import "./styles/AppShell.css";
 
@@ -21,13 +23,18 @@ function App() {
 }
 
 function AppShell() {
+  const { user, loading } = useAuth();
+
   return (
-    <div>
+    <div className="app-shell">
       <Routes>
+        {/* Public Routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegistrationPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
+
+        {/* Protected Layout */}
         <Route
           element={
             <ProtectedRoute>
@@ -44,20 +51,24 @@ function AppShell() {
           <Route path="/analytics" element={<AnalyticsDashboard />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/search" element={<SearchResultsPage />} />
+
           <Route
             path="/admin"
             element={
               <ProtectedRoute roles={["ADMIN"]}>
-                <SimplePage title="Admin Workspace" />
+                <AdminPage />
               </ProtectedRoute>
             }
           />
         </Route>
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>
   );
 }
+
+/* ===================== EXTRA COMPONENTS ===================== */
 
 const GLOBAL_SEARCH_ITEMS = [
   "Resource: Multimedia Lab",
@@ -73,19 +84,13 @@ const GLOBAL_SEARCH_ITEMS = [
 
 function roleLabel(user) {
   const roles = user?.roles || [];
-  if (roles.includes("ROLE_ADMIN")) {
-    return "ADMIN";
-  }
-  if (roles.includes("ROLE_TECHNICIAN")) {
-    return "TECHNICIAN";
-  }
+  if (roles.includes("ROLE_ADMIN")) return "ADMIN";
+  if (roles.includes("ROLE_TECHNICIAN")) return "TECHNICIAN";
   return "USER";
 }
 
 function initialsFromName(name) {
-  if (!name) {
-    return "SC";
-  }
+  if (!name) return "SC";
   return name
     .split(" ")
     .filter(Boolean)
@@ -119,17 +124,10 @@ function ProtectedLayout() {
     setSidebarOpen(false);
   }, [location.pathname]);
 
-  const onSearchSubmit = (event) => {
-    event.preventDefault();
-    if (!query.trim()) {
-      return;
-    }
+  const onSearchSubmit = (e) => {
+    e.preventDefault();
+    if (!query.trim()) return;
     navigate(`/search?q=${encodeURIComponent(query.trim())}`);
-  };
-
-  const onSuggestionClick = (value) => {
-    setQuery(value);
-    navigate(`/search?q=${encodeURIComponent(value)}`);
   };
 
   const onLogout = async () => {
@@ -137,199 +135,54 @@ function ProtectedLayout() {
     navigate("/login", { replace: true });
   };
 
-  const markAllAsRead = () => {
-    setNotifications((current) => current.map((item) => ({ ...item, unread: false })));
-  };
-
   const role = roleLabel(user);
-  const sidebarClassName = sidebarOpen ? "app-sidebar is-open" : "app-sidebar";
 
   return (
-    <div className="app-shell">
-      <header className="app-header">
-        <div className="header-left">
-          <button
-            type="button"
-            className="icon-btn mobile-only"
-            onClick={() => setSidebarOpen((current) => !current)}
-            aria-label="Toggle menu"
-          >
-            <span aria-hidden="true">☰</span>
-          </button>
-
-          <button type="button" className="brand-block" onClick={() => navigate("/")}> 
-            <span className="brand-mark" aria-hidden="true">SC</span>
-            <span className="brand-copy">
-              <strong>Smart Campus Operations Hub</strong>
-              <small>Realtime operations dashboard</small>
-            </span>
-          </button>
-        </div>
-
-        <form className="search-wrap" onSubmit={onSearchSubmit}>
-          <input
-            type="text"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search resources, bookings, tickets"
-            aria-label="Global search"
-          />
-          <button type="submit">Search</button>
-          {suggestions.length > 0 ? (
-            <ul className="search-suggestions">
-              {suggestions.map((item) => (
-                <li key={item}>
-                  <button type="button" onClick={() => onSuggestionClick(item)}>
-                    {item}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </form>
-
-        <div className="header-right">
-          <div className="dropdown-wrap">
-            <button
-              type="button"
-              className="icon-btn"
-              onClick={() => {
-                setNotificationOpen((current) => !current);
-                setProfileOpen(false);
-              }}
-              aria-label="Notifications"
-            >
-              <span aria-hidden="true">🔔</span>
-              {unreadCount > 0 ? <span className="counter-pill">{unreadCount}</span> : null}
-            </button>
-
-            {notificationOpen ? (
-              <div className="dropdown-panel notification-panel">
-                <div className="panel-head">
-                  <h4>Notifications</h4>
-                  <button type="button" onClick={markAllAsRead}>Mark all read</button>
-                </div>
-                <ul>
-                  {notifications.map((item) => (
-                    <li key={item.id} className={item.unread ? "unread" : ""}>
-                      <p>{item.text}</p>
-                      <small>{item.time}</small>
-                      <span className={`status-dot status-${item.type}`}>{item.type}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
-          </div>
-
-          <div className="dropdown-wrap">
-            <button
-              type="button"
-              className="profile-btn"
-              onClick={() => {
-                setProfileOpen((current) => !current);
-                setNotificationOpen(false);
-              }}
-              aria-label="Profile menu"
-            >
-              <span className="avatar-chip" aria-hidden="true">{initialsFromName(user?.name)}</span>
-              <span className="profile-text">
-                <strong>{user?.name || "Campus User"}</strong>
-                <small>{role}</small>
-              </span>
-            </button>
-
-            {profileOpen ? (
-              <div className="dropdown-panel profile-panel">
-                <button type="button" onClick={() => navigate("/profile")}>View Profile</button>
-                <button type="button" onClick={onLogout}>Logout</button>
-              </div>
-            ) : null}
-          </div>
-        </div>
+    <div>
+      <header>
+        <h2>PAF Portal</h2>
+        {!user ? null : (
+          <nav>
+            <Link to="/">Dashboard</Link>
+            <Link to="/admin">Admin</Link>
+            <button onClick={onLogout}>Logout</button>
+          </nav>
+        )}
       </header>
 
-      <div className="content-grid">
-        <aside className={sidebarClassName}>
-          <nav>
-            <NavLink to="/" end>
-              Dashboard
-            </NavLink>
-            <NavLink to="/resources">Resource Management</NavLink>
-            <NavLink to="/bookings">Booking Management</NavLink>
-            <NavLink to="/tickets/list">Ticket Management</NavLink>
-          </nav>
-        </aside>
-
-        <main className="main-panel">
-          <Outlet />
-        </main>
-      </div>
+      <Outlet />
     </div>
   );
 }
 
 function SimplePage({ title }) {
-  const [loading, setLoading] = React.useState(true);
-
-  React.useEffect(() => {
-    const timer = window.setTimeout(() => setLoading(false), 650);
-    return () => window.clearTimeout(timer);
-  }, []);
-
   return (
-    <section className="surface-card">
+    <div>
       <h2>{title}</h2>
-      {loading ? (
-        <div className="spinner-wrap">
-          <span className="spinner" aria-hidden="true" />
-          <p>Loading module...</p>
-        </div>
-      ) : (
-        <p>This module is ready for integration with live backend data.</p>
-      )}
-    </section>
+      <p>Module ready.</p>
+    </div>
   );
 }
 
 function ProfilePage() {
   const { user } = useAuth();
   return (
-    <section className="surface-card">
-      <h2>My Profile</h2>
-      <p>Name: {user?.name || "N/A"}</p>
-      <p>Email: {user?.email || "N/A"}</p>
-      <p>Roles: {(user?.roles || []).join(", ") || "ROLE_USER"}</p>
-    </section>
+    <div>
+      <h2>Profile</h2>
+      <p>{user?.name}</p>
+    </div>
   );
 }
 
 function SearchResultsPage() {
   const [params] = useSearchParams();
   const query = params.get("q") || "";
-  const normalizedQuery = query.trim().toLowerCase();
-  const results = normalizedQuery
-    ? GLOBAL_SEARCH_ITEMS.filter((item) => item.toLowerCase().includes(normalizedQuery))
-    : [];
 
   return (
-    <section className="surface-card">
-      <h2>Search Results</h2>
-      <p>
-        Showing results for <strong>{query || "(empty query)"}</strong>
-      </p>
-      {results.length === 0 ? (
-        <div className="empty-state">
-          <p>No matching resources, bookings, or tickets found.</p>
-        </div>
-      ) : (
-        <ul className="results-list">
-          {results.map((result) => (
-            <li key={result}>{result}</li>
-          ))}
-        </ul>
-      )}
-    </section>
+    <div>
+      <h2>Search</h2>
+      <p>{query}</p>
+    </div>
   );
 }
 
