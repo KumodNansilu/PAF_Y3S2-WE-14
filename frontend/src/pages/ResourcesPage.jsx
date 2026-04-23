@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import {
   createResource,
   deleteResource,
+  getAnalytics,
   getResources,
   updateResource,
   updateResourceStatus
@@ -100,14 +101,41 @@ function blankFilters() {
   };
 }
 
+function buildActiveFilterChips(filters) {
+  const chips = [];
+
+  if (filters.status) {
+    chips.push({ key: "status", label: `Status: ${filters.status}` });
+  }
+  if (filters.type) {
+    chips.push({ key: "type", label: `Type: ${filters.type}` });
+  }
+  if (filters.location) {
+    chips.push({ key: "location", label: `Location: ${filters.location}` });
+  }
+  if (filters.capacityMin) {
+    chips.push({ key: "capacityMin", label: `Capacity >= ${filters.capacityMin}` });
+  }
+  if (filters.capacityMax) {
+    chips.push({ key: "capacityMax", label: `Capacity <= ${filters.capacityMax}` });
+  }
+  if (filters.q) {
+    chips.push({ key: "q", label: `Search: ${filters.q}` });
+  }
+
+  return chips;
+}
+
 function ResourcesPage() {
   const { user } = useAuth();
   const isAdmin = (user?.roles || []).includes("ROLE_ADMIN");
 
   const [resources, setResources] = React.useState([]);
   const [filters, setFilters] = React.useState(blankFilters());
+  const [showAdvancedFilters, setShowAdvancedFilters] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState("");
+  const [analytics, setAnalytics] = React.useState(null);
 
   const [form, setForm] = React.useState(initialForm);
   const [createMode, setCreateMode] = React.useState("FACILITY");
@@ -132,6 +160,26 @@ function ResourcesPage() {
     loadResources();
   }, [loadResources]);
 
+  React.useEffect(() => {
+    let active = true;
+
+    getAnalytics()
+      .then((result) => {
+        if (active) {
+          setAnalytics(result);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setAnalytics(null);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const counts = React.useMemo(() => {
     const active = resources.filter((item) => item.status === "ACTIVE").length;
     const assets = resources.filter((item) => item.type === ASSET_TYPE).length;
@@ -150,6 +198,44 @@ function ResourcesPage() {
     const assetItems = resources.filter((item) => item.type === ASSET_TYPE);
     return { facilityItems, assetItems };
   }, [resources]);
+
+  const activeFilterChips = React.useMemo(() => buildActiveFilterChips(filters), [filters]);
+
+  const utilization = React.useMemo(() => {
+    if (counts.total === 0) {
+      return 0;
+    }
+    return Math.round((counts.active / counts.total) * 100);
+  }, [counts]);
+
+  const activeBookings = React.useMemo(() => {
+    if (!analytics) {
+      return 0;
+    }
+    return Number(analytics.totalOpen || 0) + Number(analytics.totalInProgress || 0);
+  }, [analytics]);
+
+  const openTickets = React.useMemo(() => {
+    if (!analytics) {
+      return 0;
+    }
+    return Number(analytics.totalOpen || 0);
+  }, [analytics]);
+
+  const highPriorityTickets = React.useMemo(() => {
+    if (!analytics) {
+      return 0;
+    }
+    return Number(analytics.totalHighPriority || 0);
+  }, [analytics]);
+
+  const clearFilters = () => {
+    setFilters(blankFilters());
+  };
+
+  const clearFilterChip = (key) => {
+    setFilters((current) => ({ ...current, [key]: "" }));
+  };
 
   const onFilterChange = (event) => {
     const { name, value } = event.target;
@@ -290,80 +376,132 @@ function ResourcesPage() {
   return (
     <section className="resources-page">
       <div className="surface-card resources-head">
-        <div>
-          <h2>Facilities & Assets Catalogue</h2>
-          <p>Maintain lecture halls, labs, meeting rooms, and equipment with searchable metadata.</p>
-        </div>
-        <div className="resource-kpis">
-          <div>
-            <strong>{counts.total}</strong>
-            <span>Total</span>
-          </div>
-          <div>
-            <strong>{counts.facilities}</strong>
-            <span>Facilities</span>
-          </div>
-          <div>
-            <strong>{counts.assets}</strong>
-            <span>Assets</span>
-          </div>
-          <div>
-            <strong>{counts.active}</strong>
-            <span>Active</span>
-          </div>
-          <div>
-            <strong>{counts.outOfService}</strong>
-            <span>Out of Service</span>
-          </div>
+        <div className="head-copy">
+          <span className="section-eyebrow">Operations</span>
+          <h2>Resource Management</h2>
+          <p>Manage facilities, assets, and availability across the campus from one unified hub.</p>
         </div>
       </div>
 
-      <div className="surface-card resource-filters">
-        <input
-          name="q"
-          value={filters.q}
-          onChange={onFilterChange}
-          placeholder="Search by name, type, location"
-        />
-        <select name="type" value={filters.type} onChange={onFilterChange}>
-          <option value="">All Types</option>
-          {[...FACILITY_TYPE_OPTIONS, ASSET_TYPE].map((type) => (
-            <option key={type} value={type}>
-              {type}
-            </option>
-          ))}
-        </select>
-        <select name="status" value={filters.status} onChange={onFilterChange}>
-          <option value="">All Statuses</option>
-          {STATUS_OPTIONS.map((status) => (
-            <option key={status} value={status}>
-              {status}
-            </option>
-          ))}
-        </select>
-        <input
-          name="location"
-          value={filters.location}
-          onChange={onFilterChange}
-          placeholder="Location"
-        />
-        <input
-          name="capacityMin"
-          value={filters.capacityMin}
-          onChange={onFilterChange}
-          placeholder="Min capacity"
-          type="number"
-          min="1"
-        />
-        <input
-          name="capacityMax"
-          value={filters.capacityMax}
-          onChange={onFilterChange}
-          placeholder="Max capacity"
-          type="number"
-          min="1"
-        />
-        <button type="button" onClick={() => setFilters(blankFilters())}>Clear</button>
+      <div className="resource-kpis-modern">
+        <article className="kpi-card facilities">
+          <div>
+            <span className="kpi-label">Total Facilities</span>
+            <strong>{counts.facilities}</strong>
+            <small>{counts.assets} assets tracked</small>
+          </div>
+          <span className="kpi-icon" aria-hidden="true">🏢</span>
+        </article>
+        <article className="kpi-card bookings">
+          <div>
+            <span className="kpi-label">Active Bookings</span>
+            <strong>{activeBookings}</strong>
+            <small>{analytics ? "Live from analytics" : "Analytics unavailable"}</small>
+          </div>
+          <span className="kpi-icon" aria-hidden="true">📅</span>
+        </article>
+        <article className="kpi-card utilization">
+          <div>
+            <span className="kpi-label">Utilization</span>
+            <strong>{utilization}%</strong>
+            <small>{counts.active} active of {counts.total} total</small>
+          </div>
+          <span className="kpi-icon" aria-hidden="true">📈</span>
+        </article>
+        <article className="kpi-card tickets">
+          <div>
+            <span className="kpi-label">Open Tickets</span>
+            <strong>{openTickets}</strong>
+            <small>{highPriorityTickets} high priority</small>
+          </div>
+          <span className="kpi-icon" aria-hidden="true">🎫</span>
+        </article>
+      </div>
+
+      <div className="surface-card resource-filters-modern">
+        <div className="filters-main-row">
+          <label className="search-control" aria-label="Search resources">
+            <span className="search-icon" aria-hidden="true">🔎</span>
+            <input
+              name="q"
+              value={filters.q}
+              onChange={onFilterChange}
+              placeholder="Search by name, type, location..."
+            />
+          </label>
+
+          <select name="type" value={filters.type} onChange={onFilterChange}>
+            <option value="">All Types</option>
+            {[...FACILITY_TYPE_OPTIONS, ASSET_TYPE].map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
+          </select>
+
+          <select name="status" value={filters.status} onChange={onFilterChange}>
+            <option value="">All Statuses</option>
+            {STATUS_OPTIONS.map((status) => (
+              <option key={status} value={status}>
+                {status}
+              </option>
+            ))}
+          </select>
+
+          <button
+            type="button"
+            className="advanced-toggle"
+            onClick={() => setShowAdvancedFilters((current) => !current)}
+          >
+            {showAdvancedFilters ? "Hide Advanced" : "Advanced"}
+          </button>
+
+          <button type="button" className="clear-btn" onClick={clearFilters}>Clear</button>
+        </div>
+
+        {showAdvancedFilters ? (
+          <div className="filters-advanced-row">
+            <input
+              name="location"
+              value={filters.location}
+              onChange={onFilterChange}
+              placeholder="Location"
+            />
+            <input
+              name="capacityMin"
+              value={filters.capacityMin}
+              onChange={onFilterChange}
+              placeholder="Min capacity"
+              type="number"
+              min="1"
+            />
+            <input
+              name="capacityMax"
+              value={filters.capacityMax}
+              onChange={onFilterChange}
+              placeholder="Max capacity"
+              type="number"
+              min="1"
+            />
+          </div>
+        ) : null}
+
+        {activeFilterChips.length > 0 ? (
+          <div className="active-filter-row">
+            <span>Active:</span>
+            {activeFilterChips.map((chip) => (
+              <button
+                key={chip.key}
+                type="button"
+                className="filter-chip"
+                onClick={() => clearFilterChip(chip.key)}
+                title="Remove filter"
+              >
+                {chip.label} ×
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       {isAdmin ? (
