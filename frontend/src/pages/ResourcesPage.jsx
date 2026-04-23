@@ -12,15 +12,68 @@ import "../styles/ResourcesPage.css";
 const FACILITY_TYPE_OPTIONS = ["LECTURE_HALL", "LAB", "MEETING_ROOM"];
 const ASSET_TYPE = "EQUIPMENT";
 const STATUS_OPTIONS = ["ACTIVE", "OUT_OF_SERVICE"];
-const DAY_OPTIONS = [
-  "MONDAY",
-  "TUESDAY",
-  "WEDNESDAY",
-  "THURSDAY",
-  "FRIDAY",
-  "SATURDAY",
-  "SUNDAY"
-];
+const DAY_OPTIONS = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
+
+function getTodayDate() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function getDayOfWeekFromDate(dateValue) {
+  if (!dateValue) {
+    return "MONDAY";
+  }
+
+  const dayIndex = new Date(`${dateValue}T00:00:00`).getDay();
+  return DAY_OPTIONS[dayIndex] || "MONDAY";
+}
+
+function getDateForDayOfWeek(dayOfWeek) {
+  const today = new Date();
+  const todayIndex = today.getDay();
+  const targetIndex = DAY_OPTIONS.indexOf((dayOfWeek || "").toUpperCase());
+
+  if (targetIndex < 0) {
+    return getTodayDate();
+  }
+
+  const offset = (targetIndex - todayIndex + 7) % 7;
+  const nextDate = new Date(today);
+  nextDate.setDate(today.getDate() + offset);
+  return nextDate.toISOString().slice(0, 10);
+}
+
+function createWindow(date = getTodayDate(), startTime = "08:00", endTime = "17:00") {
+  return {
+    date,
+    dayOfWeek: getDayOfWeekFromDate(date),
+    startTime,
+    endTime
+  };
+}
+
+function normalizeAvailabilityWindows(windows = []) {
+  if (!Array.isArray(windows) || windows.length === 0) {
+    return [createWindow()];
+  }
+
+  return windows.map((window) => {
+    const date = window.date || getDateForDayOfWeek(window.dayOfWeek);
+    return {
+      date,
+      dayOfWeek: getDayOfWeekFromDate(date),
+      startTime: window.startTime || "08:00",
+      endTime: window.endTime || "17:00"
+    };
+  });
+}
+
+function formatWindowLabel(window) {
+  if (window.date) {
+    return `${window.date} (${window.dayOfWeek}): ${window.startTime} - ${window.endTime}`;
+  }
+
+  return `${window.dayOfWeek}: ${window.startTime} - ${window.endTime}`;
+}
 
 const initialForm = {
   name: "",
@@ -28,7 +81,7 @@ const initialForm = {
   capacity: 1,
   location: "",
   status: "ACTIVE",
-  availabilityWindows: [{ dayOfWeek: "MONDAY", startTime: "08:00", endTime: "17:00" }]
+  availabilityWindows: [createWindow()]
 };
 
 const initialAssetForm = {
@@ -119,7 +172,13 @@ function ResourcesPage() {
     setForm((current) => ({
       ...current,
       availabilityWindows: current.availabilityWindows.map((window, i) =>
-        i === index ? { ...window, [field]: value } : window
+        i === index
+          ? {
+              ...window,
+              [field]: value,
+              ...(field === "date" ? { dayOfWeek: getDayOfWeekFromDate(value) } : {})
+            }
+          : window
       )
     }));
   };
@@ -129,7 +188,7 @@ function ResourcesPage() {
       ...current,
       availabilityWindows: [
         ...current.availabilityWindows,
-        { dayOfWeek: "MONDAY", startTime: "08:00", endTime: "17:00" }
+        createWindow()
       ]
     }));
   };
@@ -162,9 +221,7 @@ function ResourcesPage() {
       capacity: resource.capacity,
       location: resource.location,
       status: resource.status,
-      availabilityWindows: (resource.availabilityWindows || []).length
-        ? resource.availabilityWindows
-        : [{ dayOfWeek: "MONDAY", startTime: "08:00", endTime: "17:00" }]
+      availabilityWindows: normalizeAvailabilityWindows(resource.availabilityWindows)
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -179,7 +236,13 @@ function ResourcesPage() {
       const payload = {
         ...form,
         type: createMode === "ASSET" ? ASSET_TYPE : form.type,
-        capacity: Number(form.capacity)
+        capacity: Number(form.capacity),
+        availabilityWindows: form.availabilityWindows.map((window) => ({
+          date: window.date,
+          dayOfWeek: getDayOfWeekFromDate(window.date),
+          startTime: window.startTime,
+          endTime: window.endTime
+        }))
       };
 
       if (editingId) {
@@ -396,26 +459,24 @@ function ResourcesPage() {
             </div>
 
             {form.availabilityWindows.map((window, index) => (
-              <div className="window-row" key={`${window.dayOfWeek}-${index}`}>
-                <select
-                  value={window.dayOfWeek}
-                  onChange={(event) => onWindowChange(index, "dayOfWeek", event.target.value)}
-                >
-                  {DAY_OPTIONS.map((day) => (
-                    <option key={day} value={day}>
-                      {day}
-                    </option>
-                  ))}
-                </select>
+              <div className="window-row" key={`${window.date}-${index}`}>
+                <input
+                  type="date"
+                  value={window.date || ""}
+                  onChange={(event) => onWindowChange(index, "date", event.target.value)}
+                  required
+                />
                 <input
                   type="time"
                   value={window.startTime}
                   onChange={(event) => onWindowChange(index, "startTime", event.target.value)}
+                  required
                 />
                 <input
                   type="time"
                   value={window.endTime}
                   onChange={(event) => onWindowChange(index, "endTime", event.target.value)}
+                  required
                 />
                 <button type="button" className="danger-btn" onClick={() => removeWindow(index)}>
                   Remove
@@ -449,12 +510,16 @@ function ResourcesPage() {
 
         {!loading && !error && resources.length > 0 ? (
           <>
-            <div className="resource-table-wrap">
-              <h4>Facilities</h4>
+            <section className="catalog-section facilities-section">
+              <div className="catalog-section-head">
+                <h4>Facilities</h4>
+                <p>Lecture halls, labs, and meeting spaces.</p>
+              </div>
+              <div className="resource-table-wrap">
               {groupedResources.facilityItems.length === 0 ? (
                 <p>No facilities available.</p>
               ) : (
-                <table>
+                <table className="catalog-table">
                   <thead>
                     <tr>
                       <th>Name</th>
@@ -480,7 +545,7 @@ function ResourcesPage() {
                           <ul className="window-list">
                             {(resource.availabilityWindows || []).map((window, index) => (
                               <li key={`${resource.id}-window-${index}`}>
-                                {window.dayOfWeek}: {window.startTime} - {window.endTime}
+                                {formatWindowLabel(window)}
                               </li>
                             ))}
                           </ul>
@@ -505,54 +570,71 @@ function ResourcesPage() {
                   </tbody>
                 </table>
               )}
-            </div>
-
-            <div className="asset-panel">
-              <div className="asset-panel-head">
-                <h4>Assets</h4>
-                <p>Equipment availability at a glance</p>
               </div>
+            </section>
 
+            <section className="catalog-section assets-section">
+              <div className="catalog-section-head">
+                <h4>Assets</h4>
+                <p>Equipment inventory and item availability.</p>
+              </div>
+              <div className="resource-table-wrap">
               {groupedResources.assetItems.length === 0 ? (
                 <p>No assets available.</p>
               ) : (
-                <div className="asset-grid">
-                  {groupedResources.assetItems.map((resource) => (
-                    <article key={resource.id} className="asset-card">
-                      <div className="asset-card-top">
-                        <h5>{resource.name}</h5>
-                        <span className={`status-chip status-${resource.status}`}>{resource.status}</span>
-                      </div>
-                      <p className="asset-location">{resource.location}</p>
-                      <p className="asset-qty">
-                        <strong>{resource.capacity}</strong> items available
-                      </p>
-                      <ul className="window-list">
-                        {(resource.availabilityWindows || []).map((window, index) => (
-                          <li key={`${resource.id}-asset-window-${index}`}>
-                            {window.dayOfWeek}: {window.startTime} - {window.endTime}
-                          </li>
-                        ))}
-                      </ul>
-
-                      {isAdmin ? (
-                        <div className="action-row">
-                          <button type="button" className="ghost-btn" onClick={() => startEdit(resource)}>
-                            Edit
-                          </button>
-                          <button type="button" className="ghost-btn" onClick={() => onStatusToggle(resource)}>
-                            Toggle Status
-                          </button>
-                          <button type="button" className="danger-btn" onClick={() => onDelete(resource)}>
-                            Delete
-                          </button>
-                        </div>
-                      ) : null}
-                    </article>
-                  ))}
-                </div>
+                <table className="catalog-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Type</th>
+                      <th>Items Available</th>
+                      <th>Location</th>
+                      <th>Status</th>
+                      <th>Availability Windows</th>
+                      {isAdmin ? <th>Actions</th> : null}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {groupedResources.assetItems.map((resource) => (
+                      <tr key={resource.id}>
+                        <td>{resource.name}</td>
+                        <td>{resource.type}</td>
+                        <td>{resource.capacity}</td>
+                        <td>{resource.location}</td>
+                        <td>
+                          <span className={`status-chip status-${resource.status}`}>{resource.status}</span>
+                        </td>
+                        <td>
+                          <ul className="window-list">
+                            {(resource.availabilityWindows || []).map((window, index) => (
+                              <li key={`${resource.id}-asset-window-${index}`}>
+                                {formatWindowLabel(window)}
+                              </li>
+                            ))}
+                          </ul>
+                        </td>
+                        {isAdmin ? (
+                          <td>
+                            <div className="action-row">
+                              <button type="button" className="ghost-btn" onClick={() => startEdit(resource)}>
+                                Edit
+                              </button>
+                              <button type="button" className="ghost-btn" onClick={() => onStatusToggle(resource)}>
+                                Toggle Status
+                              </button>
+                              <button type="button" className="danger-btn" onClick={() => onDelete(resource)}>
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        ) : null}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               )}
-            </div>
+              </div>
+            </section>
           </>
         ) : null}
       </div>
