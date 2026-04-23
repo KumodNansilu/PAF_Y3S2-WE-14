@@ -1,0 +1,162 @@
+.analytics-container {
+  padding: 2rem;
+  background: #f4f7f6;
+  min-height: calc(100vh - 80px);
+}
+
+.analytics-header {
+  margin-bottom: 2rem;
+}
+
+.analytics-header h2 {
+  margin: 0;
+  color: #1a1f36;
+  font-size: 2rem;
+}
+
+.analytics-header p {
+  margin: 5px 0 0;
+  color: #697386;
+  font-size: 1rem;
+}
+
+.analytics-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: calc(100vh - 80px);
+  font-size: 1.2rem;
+  color: #697386;
+}
+
+/* KPI GRID */
+.analytics-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.analytics-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+  border: 1px solid #e3e8ee;
+  transition: transform 0.2s;
+}
+
+.analytics-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 15px rgba(0,0,0,0.05);
+}
+
+.kpi-title {
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #697386;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.5rem;
+}
+
+.kpi-value {
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.value-open { color: #3b82f6; }
+.value-progress { color: #f59e0b; }
+.value-resolved { color: #10b981; }
+.value-high { color: #ef4444; }
+
+/* ROW LAYOUT */
+.analytics-row {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 1.5rem;
+}
+
+.analytics-card h3 {
+  margin: 0 0 0.5rem 0;
+  color: #1a1f36;
+}
+
+.resolution-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.resolution-time {
+  margin: 2rem 0;
+  color: #8b5cf6;
+}
+
+.resolution-time .big-number {
+  font-size: 4.5rem;
+  font-weight: 800;
+  display: block;
+}
+
+.resolution-time .unit {
+  font-size: 1.2rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.resolution-desc {
+  color: #697386;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* TECHNICIAN LIST */
+.technician-list {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.technician-row {
+  display: flex;
+  align-items: center;
+  background: #f9fafb;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #f3f4f6;
+}
+
+.tech-rank {
+  font-weight: 800;
+  color: #9ca3af;
+  font-size: 1.2rem;
+  width: 40px;
+}
+
+.tech-email {
+  flex: 1;
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 1.05rem;
+}
+
+.tech-score {
+  font-weight: 700;
+  color: #10b981;
+  background: #d1fae5;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 1024px) {
+  .analytics-row {
+    grid-template-columns: 1fr;
+  }
+}
