@@ -72,6 +72,36 @@
   gap: 0.9rem;
 }
 
+.create-mode-switch {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.2rem;
+  background: #f5f9f8;
+  width: fit-content;
+}
+
+.mode-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 0.45rem 0.85rem;
+  background: transparent;
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+
+.mode-btn.active {
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.mode-helper {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
 .form-head {
   display: flex;
   justify-content: space-between;
@@ -156,6 +186,10 @@
   margin-top: 0;
 }
 
+.resource-list h4 {
+  margin: 0 0 0.6rem;
+}
+
 .resource-table-wrap {
   overflow-x: auto;
 }
@@ -202,8 +236,84 @@
   flex-wrap: wrap;
 }
 
+.asset-panel {
+  margin-top: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 0.9rem;
+  background: linear-gradient(180deg, #f5fbff 0%, #ffffff 100%);
+}
+
+.asset-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.asset-panel-head h4 {
+  margin: 0;
+}
+
+.asset-panel-head p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+}
+
+.asset-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.asset-card {
+  border: 1px solid #d8e8f5;
+  border-radius: 14px;
+  background: #fff;
+  padding: 0.75rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.asset-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.asset-card h5 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.asset-location {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+.asset-qty {
+  margin: 0;
+  padding: 0.5rem 0.6rem;
+  border-radius: 10px;
+  background: #eef7ff;
+  color: #1d4f72;
+  font-weight: 600;
+}
+
+.asset-qty strong {
+  font-size: 1.1rem;
+}
+
 @media (max-width: 720px) {
   .window-row {
     grid-template-columns: 1fr;
+  }
+
+  .asset-panel-head {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
