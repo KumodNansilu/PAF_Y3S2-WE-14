@@ -74,10 +74,10 @@
 
 .create-mode-switch {
   display: inline-flex;
-  border: 1px solid var(--line);
+  border: 1px solid #bfd4d1;
   border-radius: 999px;
   padding: 0.2rem;
-  background: #f5f9f8;
+  background: #e7f1ef;
   width: fit-content;
 }
 
@@ -86,14 +86,25 @@
   border-radius: 999px;
   padding: 0.45rem 0.85rem;
   background: transparent;
-  color: var(--ink-soft);
+  color: #33544f;
   font-weight: 700;
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mode-btn:hover {
+  background: #d7e7e3;
+  color: #173c36;
 }
 
 .mode-btn.active {
-  background: #fff;
-  color: var(--ink);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  background: #0f7668;
+  color: #ffffff;
+  box-shadow: 0 2px 5px rgba(15, 118, 104, 0.35);
+}
+
+.mode-btn:focus-visible {
+  outline: 2px solid #0f7668;
+  outline-offset: 2px;
 }
 
 .mode-helper {
