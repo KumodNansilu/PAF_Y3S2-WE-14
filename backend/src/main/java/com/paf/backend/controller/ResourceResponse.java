@@ -17,6 +17,6 @@ public record ResourceResponse(
 		Instant createdAt,
 		Instant updatedAt) {
 
-	public record AvailabilityWindowResponse(String dayOfWeek, String startTime, String endTime) {
+	public record AvailabilityWindowResponse(String date, String dayOfWeek, String startTime, String endTime) {
 	}
 }

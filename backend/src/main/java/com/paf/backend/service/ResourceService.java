@@ -1,6 +1,7 @@
 package com.paf.backend.service;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Locale;
@@ -100,7 +101,9 @@ public class ResourceService {
 		resource.setAvailabilityWindows(request.availabilityWindows().stream()
 				.map(window -> {
 					AvailabilityWindow availabilityWindow = new AvailabilityWindow();
-					availabilityWindow.setDayOfWeek(window.dayOfWeek().trim().toUpperCase(Locale.ROOT));
+					String normalizedDate = normalizeDate(window.date());
+					availabilityWindow.setDate(normalizedDate);
+					availabilityWindow.setDayOfWeek(resolveDayOfWeek(window, normalizedDate));
 					availabilityWindow.setStartTime(window.startTime().trim());
 					availabilityWindow.setEndTime(window.endTime().trim());
 					return availabilityWindow;
@@ -110,6 +113,10 @@ public class ResourceService {
 
 	private void validateAvailabilityWindows(List<ResourceRequest.AvailabilityWindowRequest> windows) {
 		for (ResourceRequest.AvailabilityWindowRequest window : windows) {
+			if (window.date() != null && !window.date().isBlank()) {
+				LocalDate.parse(window.date().trim());
+			}
+
 			LocalTime start = LocalTime.parse(window.startTime());
 			LocalTime end = LocalTime.parse(window.endTime());
 			if (!start.isBefore(end)) {
@@ -118,6 +125,23 @@ public class ResourceService {
 						"Availability window startTime must be earlier than endTime");
 			}
 		}
+	}
+
+	private String normalizeDate(String date) {
+		if (date == null) {
+			return null;
+		}
+
+		String trimmed = date.trim();
+		return trimmed.isBlank() ? null : trimmed;
+	}
+
+	private String resolveDayOfWeek(ResourceRequest.AvailabilityWindowRequest window, String normalizedDate) {
+		if (normalizedDate != null) {
+			return LocalDate.parse(normalizedDate).getDayOfWeek().name();
+		}
+
+		return window.dayOfWeek().trim().toUpperCase(Locale.ROOT);
 	}
 
 	private String normalize(String value) {

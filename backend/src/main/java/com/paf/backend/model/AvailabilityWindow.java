@@ -2,9 +2,18 @@ package com.paf.backend.model;
 
 public class AvailabilityWindow {
 
+	private String date;
 	private String dayOfWeek;
 	private String startTime;
 	private String endTime;
+
+	public String getDate() {
+		return date;
+	}
+
+	public void setDate(String date) {
+		this.date = date;
+	}
 
 	public String getDayOfWeek() {
 		return dayOfWeek;

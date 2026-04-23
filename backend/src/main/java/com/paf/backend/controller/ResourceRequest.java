@@ -33,6 +33,11 @@ public record ResourceRequest(
 		List<AvailabilityWindowRequest> availabilityWindows) {
 
 	public record AvailabilityWindowRequest(
+			@Pattern(
+					regexp = "^$|\\d{4}-\\d{2}-\\d{2}",
+					message = "Date must be in yyyy-MM-dd format")
+			String date,
+
 			@NotBlank(message = "Day of week is required")
 			@Pattern(
 					regexp = "MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|SATURDAY|SUNDAY",

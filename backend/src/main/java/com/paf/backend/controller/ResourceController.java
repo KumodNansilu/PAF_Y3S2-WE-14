@@ -86,6 +86,7 @@ public class ResourceController {
 				? List.of()
 				: resource.getAvailabilityWindows().stream()
 						.map(window -> new ResourceResponse.AvailabilityWindowResponse(
+								window.getDate(),
 								window.getDayOfWeek(),
 								window.getStartTime(),
 								window.getEndTime()))
