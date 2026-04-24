@@ -22,6 +22,15 @@ public class AppUser {
 	private Instant createdAt;
 	private Instant updatedAt;
 	private Instant lastLoginAt;
+	private String profileImage;
+
+	public String getProfileImage() {
+		return profileImage;
+	}
+
+	public void setProfileImage(String profileImage) {
+		this.profileImage = profileImage;
+	}
 
 	public String getId() {
 		return id;
