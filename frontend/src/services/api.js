@@ -36,9 +36,55 @@ export async function getAdminPing() {
   return response.data;
 }
 
+export async function getAllUsers() {
+  const response = await api.get("/api/admin/users");
+  return response.data;
+}
+
+export async function updateUserDetails(id, details) {
+  const response = await api.put(`/api/admin/users/${id}`, details);
+  return response.data;
+}
+
+export async function deleteUser(id) {
+  await api.delete(`/api/admin/users/${id}`);
+}
+
 export async function getUserPing() {
   const response = await api.get("/api/user/ping");
   return response.data;
+}
+
+/* ================= PROFILE ================= */
+
+export async function getProfile() {
+  const response = await api.get("/api/profile");
+  return response.data;
+}
+
+export async function updateProfileImage(base64Image) {
+  const response = await api.patch("/api/profile/image", { image: base64Image });
+  return response.data;
+}
+
+/* ================= NOTIFICATIONS ================= */
+
+export async function getNotifications() {
+  const response = await api.get("/api/notifications");
+  return response.data;
+}
+
+export async function getUnreadCount() {
+  const response = await api.get("/api/notifications/unread-count");
+  return response.data;
+}
+
+export async function markNotificationAsRead(id) {
+  await api.patch(`/api/notifications/${id}/read`);
+}
+
+export async function markAllNotificationsAsRead() {
+  await api.patch("/api/notifications/read-all");
 }
 
 /* ================= TICKETS ================= */
