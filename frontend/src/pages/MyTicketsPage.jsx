@@ -43,7 +43,10 @@ function MyTicketsPage() {
 
   const roles = user?.roles || [];
   const isAdmin = roles.includes("ROLE_ADMIN");
+  const isManager = roles.includes("ROLE_MANAGER");
   const isTechnician = roles.includes("ROLE_TECHNICIAN");
+
+  const canSeeAllFilters = isAdmin || isManager;
 
   const loadTickets = React.useCallback(async () => {
     try {
@@ -307,7 +310,7 @@ function MyTicketsPage() {
             <option value="MEDIUM">MEDIUM</option>
             <option value="HIGH">HIGH</option>
           </select>
-          {isAdmin && (
+          {canSeeAllFilters && (
             <input type="text" placeholder="Assignee email..." value={assignedTechnicianFilter} onChange={e => setAssignedTechnicianFilter(e.target.value)} />
           )}
           <button className="btn-secondary" onClick={() => { setSearchText(""); setStatusFilter(""); setPriorityFilter(""); setAssignedTechnicianFilter(""); setDateFrom(""); setDateTo(""); }}>Clear</button>
@@ -469,7 +472,7 @@ function MyTicketsPage() {
 
               <div className="control-group">
                 <label>Status</label>
-                {isAdmin ? (
+                {canSeeAllFilters ? (
                   <div className="input-row">
                     <select value={statusInput} onChange={e => setStatusInput(e.target.value)}>
                       <option value="OPEN">OPEN</option>

@@ -96,7 +96,6 @@ function TicketCreatePage() {
   const { user } = useAuth();
   const [form, setForm] = React.useState(initialState);
   const [images, setImages] = React.useState([]);
-  const [resourceQuery, setResourceQuery] = React.useState("");
   const [fieldErrors, setFieldErrors] = React.useState({});
   const [touched, setTouched] = React.useState({});
   const [submitting, setSubmitting] = React.useState(false);
@@ -124,10 +123,6 @@ function TicketCreatePage() {
       imagePreviews.forEach((item) => URL.revokeObjectURL(item.url));
     };
   }, [imagePreviews]);
-
-  const filteredResources = RESOURCE_OPTIONS.filter((item) =>
-    `${item.value} ${item.type} ${item.status}`.toLowerCase().includes(resourceQuery.toLowerCase().trim())
-  );
 
   const isRequiredFilled =
     form.resourceOrLocation.trim() &&
@@ -260,31 +255,24 @@ function TicketCreatePage() {
         <div className="ticket-form-section">
           <h3>Resource / Location</h3>
           <label>
-            Search resource or location
+            Resource or location
             <input
-              type="text"
-              value={resourceQuery}
-              onChange={(event) => setResourceQuery(event.target.value)}
-              placeholder="Search by name, type, or status"
-            />
-          </label>
-          <label>
-            Select resource or location
-            <select
+              list="resource-suggestions"
               name="resourceOrLocation"
               value={form.resourceOrLocation}
               onChange={onChange}
               onBlur={onBlurField}
               className={touched.resourceOrLocation && fieldErrors.resourceOrLocation ? "invalid" : ""}
+              placeholder="e.g. Multimedia Lab, Room 302, Library..."
               required
-            >
-              <option value="">Select an option</option>
-              {filteredResources.map((item) => (
+            />
+            <datalist id="resource-suggestions">
+              {RESOURCE_OPTIONS.map((item) => (
                 <option key={item.value} value={item.value}>
-                  {item.value} - {item.type} - {item.status}
+                  {item.type} - {item.status}
                 </option>
               ))}
-            </select>
+            </datalist>
           </label>
           {touched.resourceOrLocation && fieldErrors.resourceOrLocation ? (
             <p className="field-error">{fieldErrors.resourceOrLocation}</p>
