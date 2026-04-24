@@ -31,4 +31,9 @@ Write-Host "API will be available at: http://localhost:8080" -ForegroundColor Cy
 Write-Host "Authenticated endpoints require Google OAuth login." -ForegroundColor Cyan
 Write-Host ""
 
-.\mvnw.cmd spring-boot:run
+$localMavenRepo = Join-Path -Path $PSScriptRoot -ChildPath ".m2\repository"
+if (-not (Test-Path $localMavenRepo)) {
+    New-Item -Path $localMavenRepo -ItemType Directory -Force | Out-Null
+}
+
+& .\mvnw.cmd "-Dmaven.repo.local=$localMavenRepo" spring-boot:run

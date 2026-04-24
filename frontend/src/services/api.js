@@ -4,9 +4,31 @@ const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL || "http://localhost:8080",
   withCredentials: true,
   headers: {
-    "Content-Type": "application/json"
-  }
+    "Content-Type": "application/json",
+  },
 });
+
+function getResponseStatus(error) {
+  return error?.response?.status;
+}
+
+async function with404Fallback(requests) {
+  let lastError;
+
+  for (const makeRequest of requests) {
+    try {
+      return await makeRequest();
+    } catch (error) {
+      lastError = error;
+
+      if (getResponseStatus(error) !== 404) {
+        throw error;
+      }
+    }
+  }
+
+  throw lastError;
+}
 
 /* ================= AUTH ================= */
 
@@ -63,7 +85,9 @@ export async function getProfile() {
 }
 
 export async function updateProfileImage(base64Image) {
-  const response = await api.patch("/api/profile/image", { image: base64Image });
+  const response = await api.patch("/api/profile/image", {
+    image: base64Image,
+  });
   return response.data;
 }
 
@@ -95,8 +119,8 @@ export async function createTicket(payload, images = []) {
   formData.append(
     "payload",
     new Blob([JSON.stringify(payload)], {
-      type: "application/json"
-    })
+      type: "application/json",
+    }),
   );
 
   images.slice(0, 3).forEach((image) => {
@@ -105,8 +129,8 @@ export async function createTicket(payload, images = []) {
 
   const response = await api.post("/api/tickets", formData, {
     headers: {
-      "Content-Type": "multipart/form-data"
-    }
+      "Content-Type": "multipart/form-data",
+    },
   });
 
   return response.data;
@@ -128,12 +152,16 @@ export async function updateTicketStatus(id, status) {
 }
 
 export async function assignTechnician(id, technicianEmail) {
-  const response = await api.patch(`/api/tickets/${id}/assign`, { technicianEmail });
+  const response = await api.patch(`/api/tickets/${id}/assign`, {
+    technicianEmail,
+  });
   return response.data;
 }
 
 export async function resolveTicket(id, resolutionNotes) {
-  const response = await api.patch(`/api/tickets/${id}/resolve`, { resolutionNotes });
+  const response = await api.patch(`/api/tickets/${id}/resolve`, {
+    resolutionNotes,
+  });
   return response.data;
 }
 
@@ -143,7 +171,9 @@ export async function addComment(id, text) {
 }
 
 export async function editComment(id, commentId, text) {
-  const response = await api.patch(`/api/tickets/${id}/comments/${commentId}`, { text });
+  const response = await api.patch(`/api/tickets/${id}/comments/${commentId}`, {
+    text,
+  });
   return response.data;
 }
 
@@ -159,7 +189,7 @@ export async function getTicketImages(id) {
 
 export async function deleteTicketImage(id, fileName) {
   const response = await api.delete(
-    `/api/tickets/${id}/images/${encodeURIComponent(fileName)}`
+    `/api/tickets/${id}/images/${encodeURIComponent(fileName)}`,
   );
   return response.data;
 }
@@ -209,6 +239,78 @@ export async function updateResourceStatus(id, status) {
 
 export async function deleteResource(id) {
   const response = await api.delete(`/api/resources/${id}`);
+  return response.data;
+}
+
+/* ================= BOOKINGS ================= */
+
+export async function createBooking(payload) {
+  const response = await with404Fallback([
+    () => api.post("/api/bookings", payload),
+    () => api.post("/api/bookings/create", payload),
+  ]);
+  return response.data;
+}
+
+export async function getMyBookings() {
+  const response = await with404Fallback([
+    () => api.get("/api/bookings/user/my-bookings"),
+    () => api.get("/api/bookings/my-bookings"),
+    () => api.get("/api/bookings/my"),
+  ]);
+  return response.data;
+}
+
+export async function getPendingBookings() {
+  const response = await with404Fallback([
+    () => api.get("/api/bookings/admin/pending"),
+    () => api.get("/api/bookings/pending"),
+  ]);
+  return response.data;
+}
+
+export async function getAllBookings() {
+  const response = await with404Fallback([
+    () => api.get("/api/bookings/admin/all"),
+    () => api.get("/api/bookings/all"),
+  ]);
+  return response.data;
+}
+
+export async function getResourceBookings(resourceId) {
+  const response = await with404Fallback([
+    () => api.get(`/api/bookings/resource/${resourceId}`),
+    () => api.get(`/api/resources/${resourceId}/bookings`),
+  ]);
+  return response.data;
+}
+
+export async function getBookingById(id) {
+  const response = await api.get(`/api/bookings/${id}`);
+  return response.data;
+}
+
+export async function approveBooking(id, approved, rejectionReason = "") {
+  const response = await with404Fallback([
+    () =>
+      api.put(`/api/bookings/${id}/approve`, {
+        approved,
+        rejectionReason,
+      }),
+    () =>
+      api.put(`/api/bookings/${id}/approval`, {
+        approved,
+        rejectionReason,
+      }),
+  ]);
+  return response.data;
+}
+
+export async function cancelBooking(id) {
+  const response = await with404Fallback([
+    () => api.delete(`/api/bookings/${id}/cancel`),
+    () => api.delete(`/api/bookings/${id}`),
+  ]);
   return response.data;
 }
 
