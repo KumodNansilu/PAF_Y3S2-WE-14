@@ -3,226 +3,268 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 function resolveRole(roles) {
-  if ((roles || []).includes("ROLE_ADMIN")) {
-    return "ADMIN";
-  }
-  if ((roles || []).includes("ROLE_TECHNICIAN")) {
-    return "TECHNICIAN";
-  }
+  const rolesList = roles || [];
+  if (rolesList.includes("ROLE_ADMIN")) return "ADMIN";
+  if (rolesList.includes("ROLE_MANAGER")) return "MANAGER";
+  if (rolesList.includes("ROLE_TECHNICIAN")) return "TECHNICIAN";
   return "USER";
-}
-
-function roleStats(role) {
-  if (role === "ADMIN") {
-    return [
-      { icon: "📦", title: "Resources", value: 42, description: "Total managed assets" },
-      { icon: "📅", title: "Bookings", value: 119, description: "Active and upcoming" },
-      { icon: "🎫", title: "Tickets", value: 23, description: "Open support requests" },
-      { icon: "✅", title: "Approved Today", value: 16, description: "Approved operations" }
-    ];
-  }
-
-  if (role === "TECHNICIAN") {
-    return [
-      { icon: "🎯", title: "Assigned Tickets", value: 8, description: "Currently owned" },
-      { icon: "🔵", title: "In Progress", value: 5, description: "Needs active work" },
-      { icon: "🟢", title: "Resolved Today", value: 3, description: "Completed fixes" },
-      { icon: "⏱", title: "Avg Response", value: "34m", description: "First response time" }
-    ];
-  }
-
-  return [
-    { icon: "📦", title: "Resources", value: 16, description: "Available to book" },
-    { icon: "📅", title: "Bookings", value: 4, description: "Your upcoming bookings" },
-    { icon: "🎫", title: "My Tickets", value: 2, description: "Open tickets" },
-    { icon: "🟢", title: "Approved", value: 3, description: "Approved requests" }
-  ];
 }
 
 function Dashboard() {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [loading, setLoading] = React.useState(true);
-  const [currentTime, setCurrentTime] = React.useState(new Date());
-
   const role = resolveRole(user?.roles || []);
-  const stats = roleStats(role);
-
-  const quickActions = role === "ADMIN"
-    ? [
-        { label: "Manage Resources", path: "/resources" },
-        { label: "View Bookings", path: "/bookings" },
-        { label: "Create Ticket", path: "/tickets" }
-      ]
-    : [
-        { label: "Book Resource", path: "/resources" },
-        { label: "Create Ticket", path: "/tickets" },
-        { label: "View Bookings", path: "/bookings" }
-      ];
-
-  const recentBookings = [
-    { title: "Multimedia Lab", status: "APPROVED", date: "Today, 10:30 AM" },
-    { title: "Conference Hall A", status: "PENDING", date: "Tomorrow, 02:00 PM" },
-    { title: "Football Ground", status: "REJECTED", date: "Apr 24, 09:00 AM" }
-  ];
-
-  const recentTickets = role === "TECHNICIAN"
-    ? [
-        { title: "Projector calibration", status: "IN_PROGRESS", date: "Today, 09:50 AM" },
-        { title: "Wi-Fi outage at Block C", status: "ACTIVE", date: "Today, 08:10 AM" }
-      ]
-    : [
-        { title: "Air conditioner maintenance", status: "IN_PROGRESS", date: "Today, 11:15 AM" },
-        { title: "Printer ink replacement", status: "ACTIVE", date: "Today, 07:40 AM" }
-      ];
-
-  const resourceHighlights = [
-    { name: "Innovation Hub", type: "Lab", capacity: 40, status: "ACTIVE" },
-    { name: "Studio Room 3", type: "Media", capacity: 12, status: "PENDING" },
-    { name: "Main Auditorium", type: "Hall", capacity: 240, status: "OUT_OF_SERVICE" }
-  ];
 
   React.useEffect(() => {
-    const loadingTimer = window.setTimeout(() => setLoading(false), 900);
-    const clockTimer = window.setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => {
-      window.clearTimeout(loadingTimer);
-      window.clearInterval(clockTimer);
-    };
+    const timer = setTimeout(() => setLoading(false), 800);
+    return () => clearTimeout(timer);
   }, []);
 
-  const formatDateTime = (value) =>
-    value.toLocaleString(undefined, {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit"
-    });
+  if (loading) {
+    return (
+      <div className="spinner-wrap" style={{ padding: "4rem", justifyContent: "center" }}>
+        <span className="spinner" />
+        <p>Loading your dashboard...</p>
+      </div>
+    );
+  }
 
-  const statusClass = (status) => {
-    if (status === "APPROVED" || status === "ACTIVE") {
-      return "status-approved";
-    }
-    if (status === "PENDING") {
-      return "status-pending";
-    }
-    if (status === "REJECTED" || status === "OUT_OF_SERVICE") {
-      return "status-rejected";
-    }
-    return "status-progress";
-  };
+  switch (role) {
+    case "ADMIN":
+      return <AdminDashboard user={user} />;
+    case "MANAGER":
+      return <ManagerDashboard user={user} />;
+    case "TECHNICIAN":
+      return <TechnicianDashboard user={user} />;
+    default:
+      return <UserDashboard user={user} />;
+  }
+}
 
+function ManagerDashboard({ user }) {
+  const navigate = useNavigate();
   return (
-    <div className="dashboard-wrap">
-      <section className="welcome-banner">
+    <div className="dashboard-wrap manager-theme">
+      <header className="welcome-banner">
         <div>
-          <p className="eyebrow">Campus Operations Dashboard</p>
-          <h1>Welcome back, {user?.name || "User"}</h1>
-          <p className="time-caption">{formatDateTime(currentTime)}</p>
+          <p className="eyebrow">Operations Management</p>
+          <h1>Operations Manager Hub</h1>
+          <p>Welcome, {user?.name}. Overseeing 14 active campus tickets.</p>
         </div>
-        <span className="role-badge">{role}</span>
-      </section>
+        <span className="role-badge" style={{ background: '#f3e5f5', color: '#7b1fa2' }}>MANAGER</span>
+      </header>
 
       <section className="stats-grid">
-        {loading
-          ? Array.from({ length: 4 }).map((_, index) => <div key={index} className="skeleton-card" />)
-          : stats.map((card) => (
-              <article className="metric-card" key={card.title}>
-                <span className="metric-icon" aria-hidden="true">{card.icon}</span>
-                <h3>{card.title}</h3>
-                <p className="metric-value">{card.value}</p>
-                <p className="metric-desc">{card.description}</p>
-              </article>
-            ))}
+        <StatCard icon="📊" title="Daily Tickets" value="14" desc="Needs assignment" />
+        <StatCard icon="⌛" title="SLA Breaches" value="2" desc="Urgent attention" />
+        <StatCard icon="📈" title="Resolution" value="92%" desc="Avg success rate" />
+        <StatCard icon="🏷️" title="Resources" value="48" desc="Status monitored" />
       </section>
 
-      <section className="quick-actions">
-        <h2>Quick Actions</h2>
-        <div className="quick-action-grid">
-          {quickActions.map((action) => (
-            <button key={action.label} type="button" onClick={() => navigate(action.path)}>
-              {action.label}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="activity-grid">
-        <article className="surface-card">
-          <div className="section-head">
-            <h2>Recent Bookings</h2>
+      <div className="activity-grid">
+        <section className="surface-card">
+          <h2>Manager Oversight</h2>
+          <div className="quick-action-grid">
+            <button onClick={() => navigate("/tickets/list")}>Review All Tickets</button>
+            <button onClick={() => navigate("/analytics")}>Performance Data</button>
+            <button onClick={() => navigate("/resources")}>Asset Audit</button>
           </div>
-          {recentBookings.length === 0 ? (
-            <div className="empty-state">
-              <p>No bookings yet</p>
-              <button type="button" onClick={() => navigate("/bookings")}>Create Booking</button>
-            </div>
-          ) : (
-            <ul className="activity-list">
-              {recentBookings.map((item) => (
-                <li key={`${item.title}-${item.date}`}>
-                  <div>
-                    <p>{item.title}</p>
-                    <small>{item.date}</small>
-                  </div>
-                  <span className={`status-chip ${statusClass(item.status)}`}>{item.status}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </article>
+        </section>
 
-        <article className="surface-card">
-          <div className="section-head">
-            <h2>Recent Tickets</h2>
-          </div>
-          {recentTickets.length === 0 ? (
-            <div className="empty-state">
-              <p>No tickets found</p>
-              <button type="button" onClick={() => navigate("/tickets")}>Create Ticket</button>
-            </div>
-          ) : (
-            <ul className="activity-list">
-              {recentTickets.map((item) => (
-                <li key={`${item.title}-${item.date}`}>
-                  <div>
-                    <p>{item.title}</p>
-                    <small>{item.date}</small>
-                  </div>
-                  <span className={`status-chip ${statusClass(item.status)}`}>{item.status}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </article>
-      </section>
-
-      <section className="surface-card resource-panel">
-        <div className="section-head">
-          <h2>Resource Highlights</h2>
-          <button type="button" onClick={() => navigate("/resources")}>View All</button>
-        </div>
-        <div className="resource-grid">
-          {resourceHighlights.map((resource) => (
-            <article key={resource.name} className="resource-card">
-              <h3>{resource.name}</h3>
-              <p>{resource.type}</p>
-              <p>Capacity: {resource.capacity}</p>
-              <span className={`status-chip ${statusClass(resource.status)}`}>{resource.status}</span>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="surface-card">
-        <h2>Data Feed</h2>
-        <div className="spinner-wrap">
-          <span className="spinner" aria-hidden="true" />
-          <p>Listening for live booking and ticket updates...</p>
-        </div>
-      </section>
+        <section className="surface-card">
+          <h2>Staff Overview</h2>
+          <ul className="activity-list">
+            <li>
+              <div>
+                <p>3 Technicians Online</p>
+                <small>Average workload: 4 tickets</small>
+              </div>
+              <span className="status-chip status-approved">ACTIVE</span>
+            </li>
+            <li>
+              <div>
+                <p>Maintenance Scheduled</p>
+                <small>Main Library • Saturday</small>
+              </div>
+              <span className="status-chip status-progress">PLANNED</span>
+            </li>
+          </ul>
+        </section>
+      </div>
     </div>
+  );
+}
+
+function AdminDashboard({ user }) {
+  const navigate = useNavigate();
+  return (
+    <div className="dashboard-wrap admin-theme">
+      <header className="welcome-banner">
+        <div>
+          <p className="eyebrow">System Administration</p>
+          <h1>Administrator Hub</h1>
+          <p>Welcome back, {user?.name}. You have full system control.</p>
+        </div>
+        <span className="role-badge">ADMIN</span>
+      </header>
+
+      <section className="stats-grid">
+        <StatCard icon="👥" title="Total Users" value="1,240" desc="+12 this week" />
+        <StatCard icon="📦" title="Active Resources" value="48" desc="Across 4 blocks" />
+        <StatCard icon="🎫" title="System Tickets" value="14" desc="Needs attention" />
+        <StatCard icon="📈" title="Uptime" value="99.9%" desc="Last 30 days" />
+      </section>
+
+      <div className="activity-grid">
+        <section className="surface-card">
+          <h2>Administrative Controls</h2>
+          <div className="quick-action-grid">
+            <button onClick={() => navigate("/admin")}>User Management</button>
+            <button onClick={() => navigate("/resources")}>Asset Catalog</button>
+            <button onClick={() => navigate("/analytics")}>Operations Report</button>
+          </div>
+        </section>
+
+        <section className="surface-card">
+          <h2>Critical Alerts</h2>
+          <ul className="activity-list">
+            <li>
+              <div>
+                <p>Server Load High</p>
+                <small>Cluster B-04</small>
+              </div>
+              <span className="status-chip status-rejected">WARNING</span>
+            </li>
+            <li>
+              <div>
+                <p>New Resource Request</p>
+                <small>Multimedia Dept</small>
+              </div>
+              <span className="status-chip status-pending">PENDING</span>
+            </li>
+          </ul>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+function TechnicianDashboard({ user }) {
+  const navigate = useNavigate();
+  return (
+    <div className="dashboard-wrap technician-theme">
+      <header className="welcome-banner">
+        <div>
+          <p className="eyebrow">Technical Operations</p>
+          <h1>Field Services Dashboard</h1>
+          <p>Hello {user?.name}. You have 5 tasks pending for today.</p>
+        </div>
+        <span className="role-badge">TECHNICIAN</span>
+      </header>
+
+      <section className="stats-grid">
+        <StatCard icon="🎯" title="My Tasks" value="5" desc="Assigned to you" />
+        <StatCard icon="⏱" title="Avg Fix Time" value="42m" desc="This month" />
+        <StatCard icon="✅" title="Completed" value="28" desc="Last 7 days" />
+        <StatCard icon="🌟" title="Rating" value="4.9/5" desc="User feedback" />
+      </section>
+
+      <div className="activity-grid">
+        <section className="surface-card">
+          <h2>Assigned Tickets</h2>
+          <ul className="activity-list">
+            <li>
+              <div>
+                <p>Projector Failure</p>
+                <small>Room 402 • High Priority</small>
+              </div>
+              <span className="status-chip status-progress">IN PROGRESS</span>
+            </li>
+            <li>
+              <div>
+                <p>Wi-Fi Node Down</p>
+                <small>Main Library • Urgent</small>
+              </div>
+              <span className="status-chip status-rejected">CRITICAL</span>
+            </li>
+          </ul>
+          <button style={{ marginTop: "1rem" }} className="refresh-btn" onClick={() => navigate("/tickets/list")}>View All Tasks</button>
+        </section>
+
+        <section className="surface-card">
+          <h2>Quick Tools</h2>
+          <div className="quick-action-grid">
+            <button onClick={() => navigate("/resources")}>Check Inventory</button>
+            <button onClick={() => navigate("/tickets/list")}>Knowledge Base</button>
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+function UserDashboard({ user }) {
+  const navigate = useNavigate();
+  return (
+    <div className="dashboard-wrap">
+      <header className="welcome-banner">
+        <div>
+          <p className="eyebrow">Campus Services</p>
+          <h1>Student & Faculty Hub</h1>
+          <p>Welcome, {user?.name}. What would you like to do today?</p>
+        </div>
+        <span className="role-badge">USER</span>
+      </header>
+
+      <section className="stats-grid">
+        <StatCard icon="📅" title="My Bookings" value="2" desc="Next: Tomorrow 10AM" />
+        <StatCard icon="🎫" title="My Tickets" value="1" desc="In Progress" />
+        <StatCard icon="📦" title="Resources" value="24" desc="Available to book" />
+        <StatCard icon="🔔" title="Notifs" value="3" desc="New updates" />
+      </section>
+
+      <div className="activity-grid">
+        <section className="surface-card">
+          <h2>Quick Actions</h2>
+          <div className="quick-action-grid">
+            <button onClick={() => navigate("/resources")}>Book a Room</button>
+            <button onClick={() => navigate("/tickets")}>Report an Issue</button>
+            <button onClick={() => navigate("/bookings")}>Manage Bookings</button>
+          </div>
+        </section>
+
+        <section className="surface-card">
+          <h2>Recent Activity</h2>
+          <ul className="activity-list">
+            <li>
+              <div>
+                <p>Lab Booking</p>
+                <small>Multimedia Lab • Approved</small>
+              </div>
+              <span className="status-chip status-approved">ACTIVE</span>
+            </li>
+            <li>
+              <div>
+                <p>AC Maintenance</p>
+                <small>Ticket #T-291 • Started</small>
+              </div>
+              <span className="status-chip status-progress">PROCESSING</span>
+            </li>
+          </ul>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ icon, title, value, desc }) {
+  return (
+    <article className="metric-card">
+      <span className="metric-icon">{icon}</span>
+      <h3>{title}</h3>
+      <p className="metric-value">{value}</p>
+      <p className="metric-desc">{desc}</p>
+    </article>
   );
 }
 

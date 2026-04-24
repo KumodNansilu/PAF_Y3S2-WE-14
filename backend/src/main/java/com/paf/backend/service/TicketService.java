@@ -31,9 +31,11 @@ public class TicketService {
 	private static final int MAX_IMAGES = 3;
 
 	private final TicketRepository ticketRepository;
+	private final NotificationService notificationService;
 
-	public TicketService(TicketRepository ticketRepository) {
+	public TicketService(TicketRepository ticketRepository, NotificationService notificationService) {
 		this.ticketRepository = ticketRepository;
+		this.notificationService = notificationService;
 	}
 
 	public Ticket createTicket(CreateTicketRequest request, List<MultipartFile> images, String createdByEmail) {
@@ -90,7 +92,7 @@ public class TicketService {
 				.map(grantedAuthority -> grantedAuthority.getAuthority())
 				.toList();
 
-		if (authorities.contains("ROLE_ADMIN")) {
+		if (authorities.contains("ROLE_ADMIN") || authorities.contains("ROLE_MANAGER")) {
 			return ticketRepository.findAllByOrderByCreatedAtDesc();
 		}
 
@@ -109,7 +111,7 @@ public class TicketService {
 				.map(grantedAuthority -> grantedAuthority.getAuthority())
 				.toList();
 
-		if (authorities.contains("ROLE_ADMIN")) {
+		if (authorities.contains("ROLE_ADMIN") || authorities.contains("ROLE_MANAGER")) {
 			ticket.setStatus(newStatus);
 		} else if (authorities.contains("ROLE_TECHNICIAN")) {
 			if (ticket.getAssignedTechnicianEmail() == null || !ticket.getAssignedTechnicianEmail().equals(authentication.getName())) {
@@ -124,7 +126,17 @@ public class TicketService {
 		}
 
 		ticket.setUpdatedAt(Instant.now());
-		return ticketRepository.save(ticket);
+		Ticket savedTicket = ticketRepository.save(ticket);
+
+		// Notify Creator
+		notificationService.createNotification(
+				savedTicket.getCreatedByEmail(),
+				"Ticket Status Updated",
+				"Your ticket #" + savedTicket.getId().substring(0, 8) + " is now " + savedTicket.getStatus(),
+				"TICKET_STATUS",
+				savedTicket.getId());
+
+		return savedTicket;
 	}
 
 	public Ticket updateTicketDetails(String ticketId, UpdateTicketDetailsRequest request, Authentication authentication) {
@@ -175,7 +187,17 @@ public class TicketService {
 		ticket.getAssignmentHistory().add(history);
 
 		ticket.setUpdatedAt(Instant.now());
-		return ticketRepository.save(ticket);
+		Ticket savedTicket = ticketRepository.save(ticket);
+
+		// Notify Assigned Technician
+		notificationService.createNotification(
+				technicianEmail,
+				"New Ticket Assigned",
+				"You have been assigned to ticket #" + savedTicket.getId().substring(0, 8),
+				"TICKET_ASSIGN",
+				savedTicket.getId());
+
+		return savedTicket;
 	}
 
 	public Ticket resolveTicket(String ticketId, String resolutionNotes, Authentication authentication) {
@@ -190,14 +212,24 @@ public class TicketService {
 			if (ticket.getAssignedTechnicianEmail() == null || !ticket.getAssignedTechnicianEmail().equals(authentication.getName())) {
 				throw new AccessDeniedException("You can only resolve tickets assigned to you");
 			}
-		} else if (!authorities.contains("ROLE_ADMIN")) {
-			throw new AccessDeniedException("Only admins and assigned technicians can resolve tickets");
+		} else if (!authorities.contains("ROLE_ADMIN") && !authorities.contains("ROLE_MANAGER")) {
+			throw new AccessDeniedException("Only admins, managers and assigned technicians can resolve tickets");
 		}
 
 		ticket.setResolutionNotes(resolutionNotes);
 		ticket.setStatus(TicketStatus.RESOLVED);
 		ticket.setUpdatedAt(Instant.now());
-		return ticketRepository.save(ticket);
+		Ticket savedTicket = ticketRepository.save(ticket);
+
+		// Notify Creator
+		notificationService.createNotification(
+				savedTicket.getCreatedByEmail(),
+				"Ticket Resolved",
+				"Your ticket #" + savedTicket.getId().substring(0, 8) + " has been marked as RESOLVED.",
+				"TICKET_STATUS",
+				savedTicket.getId());
+
+		return savedTicket;
 	}
 
 	public Ticket addComment(String ticketId, String text, Authentication authentication) {
@@ -213,7 +245,23 @@ public class TicketService {
 
 		ticket.getComments().add(comment);
 		ticket.setUpdatedAt(Instant.now());
-		return ticketRepository.save(ticket);
+		Ticket savedTicket = ticketRepository.save(ticket);
+
+		// Notify relevant party (Creator or Assigned Tech)
+		String recipient = savedTicket.getCreatedByEmail().equals(authentication.getName())
+				? savedTicket.getAssignedTechnicianEmail()
+				: savedTicket.getCreatedByEmail();
+
+		if (recipient != null) {
+			notificationService.createNotification(
+					recipient,
+					"New Comment on Ticket",
+					"New comment on ticket #" + savedTicket.getId().substring(0, 8) + " by " + authentication.getName(),
+					"TICKET_COMMENT",
+					savedTicket.getId());
+		}
+
+		return savedTicket;
 	}
 
 	public Ticket editComment(String ticketId, String commentId, String text, Authentication authentication) {

@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { updateProfileImage, getProfile } from "../services/api";
 import "../styles/ProfilePage.css";
 
 const ProfilePage = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, login } = useAuth(); // Use login to update local user state if needed
   const navigate = useNavigate();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -13,7 +14,35 @@ const ProfilePage = () => {
     phone: user?.phone || "+1 (555) 123-4567",
     department: user?.department || "Operations",
   });
-  const [avatar, setAvatar] = useState(null);
+  const [avatar, setAvatar] = useState(user?.profileImage || null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert("Image size should be less than 2MB");
+        return;
+      }
+
+      setUploading(true);
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = async () => {
+        const base64 = reader.result;
+        try {
+          await updateProfileImage(base64);
+          setAvatar(base64);
+          // Optional: You might want to update the global auth context here
+          // to reflect the change in the header immediately.
+        } catch (err) {
+          alert("Failed to upload image");
+        } finally {
+          setUploading(false);
+        }
+      };
+    }
+  };
 
   const [settings, setSettings] = useState({
     bookingUpdates: true,
@@ -36,14 +65,6 @@ const ProfilePage = () => {
   const handleSaveProfile = (e) => {
     e.preventDefault();
     setIsEditing(false);
-    // Add API call here
-  };
-
-  const handleAvatarChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setAvatar(URL.createObjectURL(file));
-    }
   };
 
   const handleSettingToggle = (key) => {

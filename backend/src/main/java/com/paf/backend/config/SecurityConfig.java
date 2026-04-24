@@ -62,7 +62,8 @@ public class SecurityConfig {
 						.requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/auth/**").permitAll()
 						.requestMatchers("/api/admin/**").hasRole("ADMIN")
-						.requestMatchers("/api/technician/**").hasAnyRole("TECHNICIAN", "ADMIN")
+						.requestMatchers("/api/analytics/**").hasAnyRole("ADMIN", "MANAGER")
+						.requestMatchers("/api/technician/**").hasAnyRole("TECHNICIAN", "ADMIN", "MANAGER")
 						.anyRequest().authenticated())
 				.oauth2Login(oauth2 -> oauth2
 						.userInfoEndpoint(userInfo -> userInfo

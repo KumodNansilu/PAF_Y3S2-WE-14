@@ -88,7 +88,6 @@ function TicketCreatePage() {
   const { user } = useAuth();
   const [form, setForm] = React.useState(initialState);
   const [images, setImages] = React.useState([]);
-  const [resourceQuery, setResourceQuery] = React.useState("");
   const [fieldErrors, setFieldErrors] = React.useState({});
   const [touched, setTouched] = React.useState({});
   const [submitting, setSubmitting] = React.useState(false);
@@ -150,9 +149,8 @@ function TicketCreatePage() {
   const filteredResources = resourceOptions.filter((item) =>
     `${item.name} ${item.type} ${item.location} ${item.status}`
       .toLowerCase()
-      .includes(resourceQuery.toLowerCase().trim())
+      .includes(form.resourceOrLocation.toLowerCase().trim())
   );
-
   const isRequiredFilled =
     form.resourceOrLocation.trim() &&
     form.category.trim() &&
@@ -225,7 +223,6 @@ function TicketCreatePage() {
       contactName: user?.name || "",
       contactEmail: user?.email || ""
     });
-    setResourceQuery("");
     setImages([]);
     setFieldErrors({});
     setTouched({});
@@ -284,31 +281,24 @@ function TicketCreatePage() {
         <div className="ticket-form-section">
           <h3>Resource / Location</h3>
           <label>
-            Search resource or location
+            Resource or location
             <input
-              type="text"
-              value={resourceQuery}
-              onChange={(event) => setResourceQuery(event.target.value)}
-              placeholder="Search by name, type, or status"
-            />
-          </label>
-          <label>
-            Select resource or location
-            <select
+              list="resource-suggestions"
               name="resourceOrLocation"
               value={form.resourceOrLocation}
               onChange={onChange}
               onBlur={onBlurField}
               className={touched.resourceOrLocation && fieldErrors.resourceOrLocation ? "invalid" : ""}
+              placeholder="e.g. Multimedia Lab, Room 302, Library..."
               required
-            >
-              <option value="">Select an option</option>
+            />
+            <datalist id="resource-suggestions">
               {filteredResources.map((item) => (
                 <option key={item.id} value={item.name}>
                   {item.name} - {item.type} - {item.location}
                 </option>
               ))}
-            </select>
+            </datalist>
           </label>
           {resourceLoading ? <p>Loading resources...</p> : null}
           {!resourceLoading && filteredResources.length === 0 ? (
