@@ -1,6 +1,8 @@
 package com.paf.backend.config;
 
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -148,16 +150,28 @@ public class SecurityConfig {
 	}
 
 	@Bean
-	UserDetailsService userDetailsService(AppUserRepository appUserRepository) {
+	UserDetailsService userDetailsService(AppUserRepository appUserRepository, AppProperties appProperties) {
 		return email -> appUserRepository.findByEmailIgnoreCase(email)
 				.filter(user -> user.getPasswordHash() != null && !user.getPasswordHash().isBlank())
 				.map(user -> {
-					List<String> roles = user.getRoles() == null || user.getRoles().isEmpty()
-							? List.of("ROLE_USER")
-							: user.getRoles();
+					Set<String> effectiveRoles = new HashSet<>();
+
+					if (user.getRoles() != null && !user.getRoles().isEmpty()) {
+						effectiveRoles.addAll(user.getRoles());
+					}
+
+					RoleMapper.authoritiesFor(user.getEmail(), appProperties)
+							.stream()
+							.map(authority -> authority.getAuthority())
+							.forEach(effectiveRoles::add);
+
+					if (effectiveRoles.isEmpty()) {
+						effectiveRoles.add("ROLE_USER");
+					}
+
 					return User.withUsername(user.getEmail())
 							.password(user.getPasswordHash())
-							.authorities(roles.toArray(new String[0]))
+							.authorities(effectiveRoles.toArray(new String[0]))
 							.build();
 				})
 				.orElseThrow(() -> new UsernameNotFoundException("Invalid email or password"));

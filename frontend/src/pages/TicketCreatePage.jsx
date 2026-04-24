@@ -1,16 +1,8 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { createTicket } from "../services/api";
+import { createTicket, getResources } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import "../styles/TicketCreatePage.css";
-
-const RESOURCE_OPTIONS = [
-  { value: "Multimedia Lab", type: "Lab", status: "Available" },
-  { value: "Engineering Hall", type: "Hall", status: "Available" },
-  { value: "Library - Level 2", type: "Study", status: "Busy" },
-  { value: "Main Auditorium", type: "Hall", status: "Maintenance" },
-  { value: "Studio Room 3", type: "Media", status: "Available" }
-];
 
 const CATEGORY_OPTIONS = [
   { value: "Electrical", icon: "⚡" },
@@ -100,6 +92,8 @@ function TicketCreatePage() {
   const [touched, setTouched] = React.useState({});
   const [submitting, setSubmitting] = React.useState(false);
   const [formError, setFormError] = React.useState("");
+  const [resourceOptions, setResourceOptions] = React.useState([]);
+  const [resourceLoading, setResourceLoading] = React.useState(true);
 
   React.useEffect(() => {
     if (!user) {
@@ -113,6 +107,34 @@ function TicketCreatePage() {
     }));
   }, [user]);
 
+  React.useEffect(() => {
+    let mounted = true;
+
+    const loadResourceOptions = async () => {
+      try {
+        setResourceLoading(true);
+        const data = await getResources({ status: "ACTIVE" });
+        if (mounted) {
+          setResourceOptions(Array.isArray(data) ? data : []);
+        }
+      } catch (error) {
+        if (mounted) {
+          setResourceOptions([]);
+        }
+      } finally {
+        if (mounted) {
+          setResourceLoading(false);
+        }
+      }
+    };
+
+    loadResourceOptions();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const imagePreviews = React.useMemo(
     () => images.map((file) => ({ file, url: URL.createObjectURL(file) })),
     [images]
@@ -124,6 +146,11 @@ function TicketCreatePage() {
     };
   }, [imagePreviews]);
 
+  const filteredResources = resourceOptions.filter((item) =>
+    `${item.name} ${item.type} ${item.location} ${item.status}`
+      .toLowerCase()
+      .includes(form.resourceOrLocation.toLowerCase().trim())
+  );
   const isRequiredFilled =
     form.resourceOrLocation.trim() &&
     form.category.trim() &&
@@ -196,7 +223,6 @@ function TicketCreatePage() {
       contactName: user?.name || "",
       contactEmail: user?.email || ""
     });
-    setResourceQuery("");
     setImages([]);
     setFieldErrors({});
     setTouched({});
@@ -267,13 +293,17 @@ function TicketCreatePage() {
               required
             />
             <datalist id="resource-suggestions">
-              {RESOURCE_OPTIONS.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.type} - {item.status}
+              {filteredResources.map((item) => (
+                <option key={item.id} value={item.name}>
+                  {item.name} - {item.type} - {item.location}
                 </option>
               ))}
             </datalist>
           </label>
+          {resourceLoading ? <p>Loading resources...</p> : null}
+          {!resourceLoading && filteredResources.length === 0 ? (
+            <p className="field-error">No ACTIVE resources found in the catalogue.</p>
+          ) : null}
           {touched.resourceOrLocation && fieldErrors.resourceOrLocation ? (
             <p className="field-error">{fieldErrors.resourceOrLocation}</p>
           ) : null}

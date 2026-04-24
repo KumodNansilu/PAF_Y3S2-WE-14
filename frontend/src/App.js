@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import TicketCreatePage from "./pages/TicketCreatePage";
 import MyTicketsPage from "./pages/MyTicketsPage";
 import AnalyticsDashboard from "./pages/AnalyticsDashboard";
+import ResourcesPage from "./pages/ResourcesPage";
 import UnauthorizedPage from "./pages/UnauthorizedPage";
 import ProfilePage from "./pages/ProfilePage";
 import AdminPage from "./pages/AdminPage";
@@ -38,7 +39,7 @@ function AppShell() {
           }
         >
           <Route path="/" element={<Dashboard />} />
-          <Route path="/resources" element={<SimplePage title="Resource Management" />} />
+          <Route path="/resources" element={<ResourcesPage />} />
           <Route path="/bookings" element={<SimplePage title="Booking Management" />} />
           <Route path="/tickets" element={<TicketCreatePage />} />
           <Route path="/tickets/list" element={<MyTicketsPage />} />
