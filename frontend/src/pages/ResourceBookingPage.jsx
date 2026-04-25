@@ -185,7 +185,10 @@ function ResourceBookingPage() {
   return (
     <div className="booking-page">
       <h1>📅 Resource Booking System</h1>
-      <p className="booking-subtitle">Book campus resources easily • Get instant notifications • Track your bookings</p>
+      <p className="booking-subtitle">
+        Book campus resources easily • Get instant notifications • Track your
+        bookings
+      </p>
 
       {error && <div className="alert alert-error">⚠️ {error}</div>}
 
@@ -250,19 +253,28 @@ function ResourceBookingPage() {
                     <div className="details">
                       <div className="detail-item">
                         <span>📂</span>
-                        <span><strong>Type:</strong> {resource.type.replace(/_/g, " ")}</span>
+                        <span>
+                          <strong>Type:</strong>{" "}
+                          {resource.type.replace(/_/g, " ")}
+                        </span>
                       </div>
                       <div className="detail-item">
                         <span>📍</span>
-                        <span><strong>Location:</strong> {resource.location}</span>
+                        <span>
+                          <strong>Location:</strong> {resource.location}
+                        </span>
                       </div>
                       <div className="detail-item">
                         <span>👥</span>
-                        <span><strong>Capacity:</strong> {resource.capacity} people</span>
+                        <span>
+                          <strong>Capacity:</strong> {resource.capacity} people
+                        </span>
                       </div>
                       <div className="detail-item">
                         <span>✓</span>
-                        <span className={`status-badge ${resource.status !== "ACTIVE" ? "inactive" : ""}`}>
+                        <span
+                          className={`status-badge ${resource.status !== "ACTIVE" ? "inactive" : ""}`}
+                        >
                           {resource.status}
                         </span>
                       </div>
@@ -272,7 +284,9 @@ function ResourceBookingPage() {
                       className="btn btn-success"
                       disabled={resource.status !== "ACTIVE"}
                     >
-                      {resource.status === "ACTIVE" ? "📅 Book Now" : "❌ Not Available"}
+                      {resource.status === "ACTIVE"
+                        ? "📅 Book Now"
+                        : "❌ Not Available"}
                     </button>
                   </div>
                 ))
