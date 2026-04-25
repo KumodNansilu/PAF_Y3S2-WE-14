@@ -85,6 +85,14 @@ public class BookingService {
                 .collect(Collectors.toList());
     }
 
+    public List<BookingResponse> getAllBookings(int page) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, 10);
+        org.springframework.data.domain.Page<ResourceBooking> bookingsPage = bookingRepository.findAll(pageable);
+        return bookingsPage.getContent().stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
     public List<BookingResponse> getResourceBookings(String resourceId) {
         List<ResourceBooking> bookings = bookingRepository.findByResourceId(resourceId);
         return bookings.stream()
