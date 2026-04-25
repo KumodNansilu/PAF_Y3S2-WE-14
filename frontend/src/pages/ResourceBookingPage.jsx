@@ -184,16 +184,17 @@ function ResourceBookingPage() {
 
   return (
     <div className="booking-page">
-      <h1>Resource Booking System</h1>
+      <h1>📅 Resource Booking System</h1>
+      <p className="booking-subtitle">Book campus resources easily • Get instant notifications • Track your bookings</p>
 
-      {error && <div className="alert alert-error">{error}</div>}
+      {error && <div className="alert alert-error">⚠️ {error}</div>}
 
       <div className="tabs">
         <button
           className={`tab-button ${activeTab === "browse" ? "active" : ""}`}
           onClick={() => setActiveTab("browse")}
         >
-          Browse Resources
+          🔍 Browse Resources
         </button>
         <button
           className={`tab-button ${activeTab === "my-bookings" ? "active" : ""}`}
@@ -229,7 +230,7 @@ function ResourceBookingPage() {
                 className="filter-input"
               />
               <button onClick={applyFilters} className="btn btn-primary">
-                Apply Filters
+                🔍 Apply Filters
               </button>
             </div>
           </div>
@@ -246,25 +247,32 @@ function ResourceBookingPage() {
                 resources.map((resource) => (
                   <div key={resource.id} className="resource-card">
                     <h3>{resource.name}</h3>
-                    <p>
-                      <strong>Type:</strong> {resource.type}
-                    </p>
-                    <p>
-                      <strong>Location:</strong> {resource.location}
-                    </p>
-                    <p>
-                      <strong>Capacity:</strong> {resource.capacity}
-                    </p>
-                    <p>
-                      <strong>Status:</strong>{" "}
-                      <span className="status-badge">{resource.status}</span>
-                    </p>
+                    <div className="details">
+                      <div className="detail-item">
+                        <span>📂</span>
+                        <span><strong>Type:</strong> {resource.type.replace(/_/g, " ")}</span>
+                      </div>
+                      <div className="detail-item">
+                        <span>📍</span>
+                        <span><strong>Location:</strong> {resource.location}</span>
+                      </div>
+                      <div className="detail-item">
+                        <span>👥</span>
+                        <span><strong>Capacity:</strong> {resource.capacity} people</span>
+                      </div>
+                      <div className="detail-item">
+                        <span>✓</span>
+                        <span className={`status-badge ${resource.status !== "ACTIVE" ? "inactive" : ""}`}>
+                          {resource.status}
+                        </span>
+                      </div>
+                    </div>
                     <button
                       onClick={() => handleResourceSelect(resource)}
                       className="btn btn-success"
                       disabled={resource.status !== "ACTIVE"}
                     >
-                      Book Now
+                      {resource.status === "ACTIVE" ? "📅 Book Now" : "❌ Not Available"}
                     </button>
                   </div>
                 ))
@@ -337,7 +345,7 @@ function ResourceBookingPage() {
           onClick={() => setShowBookingForm(false)}
         >
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>Book {selectedResource.name}</h2>
+            <h2>📆 Book {selectedResource.name}</h2>
             <form onSubmit={handleSubmitBooking}>
               <div className="form-group">
                 <label>Booking Date *</label>
@@ -392,14 +400,14 @@ function ResourceBookingPage() {
                   className="btn btn-primary"
                   disabled={loading}
                 >
-                  {loading ? "Submitting..." : "Submit Booking Request"}
+                  {loading ? "⏳ Submitting..." : "✓ Submit Booking Request"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowBookingForm(false)}
                   className="btn btn-secondary"
                 >
-                  Cancel
+                  ✕ Cancel
                 </button>
               </div>
             </form>
