@@ -12,6 +12,7 @@ import com.paf.backend.model.BookingStatus;
 @Repository
 public interface ResourceBookingRepository extends MongoRepository<ResourceBooking, String> {
     List<ResourceBooking> findByUserEmail(String userEmail);
+    org.springframework.data.domain.Page<ResourceBooking> findByUserEmail(String userEmail, org.springframework.data.domain.Pageable pageable);
 
     List<ResourceBooking> findByResourceId(String resourceId);
 
