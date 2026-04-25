@@ -11,7 +11,9 @@ import "../styles/ResourceBookingPage.css";
 function ResourceBookingPage() {
   const { user } = useAuth();
   const [resources, setResources] = useState([]);
+  const [allMyBookings, setAllMyBookings] = useState([]);
   const [myBookings, setMyBookings] = useState([]);
+  const [currentPage, setCurrentPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("browse"); // browse or my-bookings
@@ -60,14 +62,31 @@ function ResourceBookingPage() {
 
   const fetchMyBookings = async () => {
     try {
-      const data = await getMyBookings();
-      setMyBookings(data);
+      const [allData, pageData] = await Promise.all([
+        getMyBookings(),
+        getMyBookings(0)
+      ]);
+      setAllMyBookings(allData);
+      setMyBookings(pageData);
+      setCurrentPage(0);
       setError("");
     } catch (err) {
       setError("Failed to load your bookings");
       console.error(err);
     }
   };
+
+  const loadPage = async (page) => {
+    try {
+      const pageData = await getMyBookings(page);
+      setMyBookings(pageData);
+      setCurrentPage(page);
+    } catch (err) {
+      setError("Failed to load page");
+    }
+  };
+
+  const totalPages = Math.ceil(allMyBookings.length / 10) || 1;
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
@@ -302,19 +321,19 @@ function ResourceBookingPage() {
             <article className="metric-card">
               <span className="metric-icon">📅</span>
               <h3>Total Bookings</h3>
-              <p className="metric-value">{myBookings.length}</p>
+              <p className="metric-value">{allMyBookings.length}</p>
               <p className="metric-desc">Your overall bookings</p>
             </article>
             <article className="metric-card">
               <span className="metric-icon">⏳</span>
               <h3>Pending Bookings</h3>
-              <p className="metric-value">{myBookings.filter(b => b.status === "PENDING").length}</p>
+              <p className="metric-value">{allMyBookings.filter(b => b.status === "PENDING").length}</p>
               <p className="metric-desc">Awaiting approval</p>
             </article>
             <article className="metric-card">
               <span className="metric-icon">❌</span>
               <h3>Cancelled Bookings</h3>
-              <p className="metric-value">{myBookings.filter(b => b.status === "CANCELLED" || b.status === "REJECTED").length}</p>
+              <p className="metric-value">{allMyBookings.filter(b => b.status === "CANCELLED" || b.status === "REJECTED").length}</p>
               <p className="metric-desc">Cancelled or rejected</p>
             </article>
           </section>
@@ -369,6 +388,24 @@ function ResourceBookingPage() {
                   ))}
                 </tbody>
               </table>
+              <div className="pagination" style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginTop: '1rem' }}>
+                {Array.from({ length: totalPages }, (_, i) => (
+                  <button 
+                    key={i} 
+                    onClick={() => loadPage(i)}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      border: '1px solid var(--brand)',
+                      backgroundColor: currentPage === i ? 'var(--brand)' : 'white',
+                      color: currentPage === i ? 'white' : 'var(--brand)',
+                      borderRadius: '4px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>
