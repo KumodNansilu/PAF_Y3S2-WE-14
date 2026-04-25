@@ -49,8 +49,11 @@ public class BookingController {
 
     @GetMapping("/user/my-bookings")
     @PreAuthorize("hasRole('USER')")
-    public List<BookingResponse> getUserBookings(Authentication authentication) {
+    public List<BookingResponse> getUserBookings(@RequestParam(value = "page", required = false) Integer page, Authentication authentication) {
         String userEmail = authentication.getName();
+        if (page != null) {
+            return bookingService.getUserBookings(userEmail, page);
+        }
         return bookingService.getUserBookings(userEmail);
     }
 
