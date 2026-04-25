@@ -298,6 +298,27 @@ function ResourceBookingPage() {
 
       {activeTab === "my-bookings" && (
         <div className="my-bookings-section">
+          <section className="stats-grid" style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))", marginBottom: "1.5rem" }}>
+            <article className="metric-card">
+              <span className="metric-icon">📅</span>
+              <h3>Total Bookings</h3>
+              <p className="metric-value">{myBookings.length}</p>
+              <p className="metric-desc">Your overall bookings</p>
+            </article>
+            <article className="metric-card">
+              <span className="metric-icon">⏳</span>
+              <h3>Pending Bookings</h3>
+              <p className="metric-value">{myBookings.filter(b => b.status === "PENDING").length}</p>
+              <p className="metric-desc">Awaiting approval</p>
+            </article>
+            <article className="metric-card">
+              <span className="metric-icon">❌</span>
+              <h3>Cancelled Bookings</h3>
+              <p className="metric-value">{myBookings.filter(b => b.status === "CANCELLED" || b.status === "REJECTED").length}</p>
+              <p className="metric-desc">Cancelled or rejected</p>
+            </article>
+          </section>
+
           {loading ? (
             <div className="loading">Loading your bookings...</div>
           ) : myBookings.length === 0 ? (
