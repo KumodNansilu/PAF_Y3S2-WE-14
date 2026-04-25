@@ -252,11 +252,12 @@ export async function createBooking(payload) {
   return response.data;
 }
 
-export async function getMyBookings() {
+export async function getMyBookings(page) {
+  const query = page !== undefined && page !== null ? `?page=${page}` : "";
   const response = await with404Fallback([
-    () => api.get("/api/bookings/user/my-bookings"),
-    () => api.get("/api/bookings/my-bookings"),
-    () => api.get("/api/bookings/my"),
+    () => api.get(`/api/bookings/user/my-bookings${query}`),
+    () => api.get(`/api/bookings/my-bookings${query}`),
+    () => api.get(`/api/bookings/my${query}`),
   ]);
   return response.data;
 }
