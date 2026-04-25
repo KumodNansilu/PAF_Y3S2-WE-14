@@ -71,6 +71,14 @@ public class BookingService {
                 .collect(Collectors.toList());
     }
 
+    public List<BookingResponse> getUserBookings(String userEmail, int page) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, 10);
+        org.springframework.data.domain.Page<ResourceBooking> bookingsPage = bookingRepository.findByUserEmail(userEmail, pageable);
+        return bookingsPage.getContent().stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
     public List<BookingResponse> getPendingBookings() {
         List<ResourceBooking> bookings = bookingRepository.findByStatusOrderByCreatedAtDesc(BookingStatus.PENDING);
         return bookings.stream()
